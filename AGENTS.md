@@ -19,6 +19,7 @@
 - 비밀값(`.env`)을 출력·커밋하지 않는다. `samples/`(친구 닉네임 포함)는 커밋하지 않는다.
 - git: 작업 브랜치에서만. **커밋·푸시·PR은 사용자 승인 후.**
 - 리뷰: 작업 단위마다 커밋 전에 **Codex 읽기 전용 코드 리뷰**를 받고, 지적은 직접 사실 확인 후 반영·정정 내용을 학습 노트에 남긴다(M1부터 적용).
+- Codex 모델: 어려운 작업(마일스톤 코드 리뷰, 복잡한 구현·진단)은 `gpt-6-astra`, 단순 작업은 기본값(`gpt-6.1-sol`). 사용자 요청(2026-10-16).
 - Codex 실행 환경은 네트워크가 막혀 있다. 의존성 다운로드·Gemini·Data Dragon이 필요한 빌드·실측은 Claude가 하고, Codex는 리뷰와 오프라인 구현을 맡는다.
 
 ## 3. 현재 상태 (마지막 갱신: 2026-10-16, Claude)
@@ -33,12 +34,13 @@ M0 1차 실측 (gemini-3.8-flash, 샘플 3장, 2026-10-16):
 - 닉네임 26/30. 틀린 4개는 모두 한 글자 오인식(비슷한 한글·한자) → 등록 닉네임 유사도 매칭으로 보정 가능
 - 챔피언(사용자 정답 입력 후, 오프라인 튜닝): 픽 29/29, 밴 20/30(3위 안 23/30). 같은 3장으로 튜닝·평가했으므로 새 샘플 재검증 필요
 - 2차 재실행(리뷰 반영 후): 닉네임 27/30, 픽 29/29, 밴 17/30(3위 안 23/30), 지연 43~89초 → 실행마다 결과가 흔들림. 밴은 상위 3개 중 선택 UI로
-- M0 남은 일: 커밋·PR(사용자 승인 대기). 새 결과창이 모이면 재측정
+- M0 상태: PR #2 열림, CI 3잡 통과. 사용자가 직접 검토 후 머지 예정. 새 결과창이 모이면 재측정
 - 지연: 재시도 없을 때 약 23초, 무료 등급 503(고수요)으로 재시도 시 36~66초
 - 챔피언 박스 위치는 정확. 매칭 설정은 `IconMatcher.PICK`/`BAN`(노트 05, ADR 003)
 - 고친 것: SDK `responseSchema`→`responseJsonSchema`(Codex 환경은 네트워크 차단으로 컴파일 불가였음), 모델 `gemini-2.5-flash`(신규 사용자 제공 종료, 404)→`gemini-3.8-flash`
 - Codex 실행 환경은 네트워크가 막혀 있음 → 빌드·실측은 Claude가, Codex는 리뷰·오프라인 구현 담당
-| M2~M8 | 시작 전 |
+| M2 도메인 규칙 | 구현·Codex(Astra) 리뷰 반영·재검증 완료(캐시 없는 build, 테스트 170개 통과, 주요 수정은 리드가 코드로 확인). **다음 할 일: 사용자 승인 후 M2 커밋·푸시·PR → 머지 후 M3(영속성·담당자 로그인·선수/별칭·내전·대결 API) 시작.** Claude 사용량 한계로 여기서 멈춤(2026-10-16). 브랜치 `m2-domain-rules`(커밋 전). M3가 알아야 할 것: `Fearless.restrictedChampions`는 `List<PlayedSet(picks, bans)>`를 받음, `Kda` 필드는 long, 닉네임 비교 키는 `NicknameNormalizer.comparisonKey`(NFKC+공백 정리+소문자) → M3 별칭 테이블에 이 키로 UNIQUE, `NicknameMatchResult.fullNicknameRequired`는 잘린 입력이면 항상 true. 사용자 결정(2026-10-16): 랭킹 최소 5세트, PERFECT는 (K+A)/max(D,1)로 정렬, 경고는 저장을 막지 않음, 닉네임 대소문자 무시. 이전 기록: 공통 enum `com.lolinhouse.domain.{Position,Side,DuelTeam}`(리드 작성). 팀원 A: `domain.set`(포지션 배정·밴 순서·세트 지문·1팀/2팀·피어리스·저장 검증, 노트 06·ADR 004). 팀원 B: `domain.player`·`domain.stats`(닉네임 매칭·통계·랭킹, 노트 07). 끝나면 리드 검증 → Codex 리뷰 |
+| M3~M8 | 시작 전 |
 
 M1에서 끝난 것:
 - 루트: `.env`(사용자가 Gemini 키·담당자 계정 입력 완료), `.env.example`, `.gitignore`, `.gitattributes`, `CLAUDE.md`, `infra/docker-compose.yml`(MySQL 8.4, 호스트 포트 **3307** — PC의 기존 MySQL이 3306 사용 중)
