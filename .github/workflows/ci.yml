@@ -20,7 +20,8 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       # GitHub 러너에는 Docker가 있어 Testcontainers MySQL 테스트가 그대로 돈다. .env는 없다.
-      - run: ./gradlew test --console=plain
+      # build = 컴파일 + 테스트 + 실행 jar 패키징(bootJar). 배포 산출물이 실제로 만들어지는지까지 확인한다.
+      - run: ./gradlew build --console=plain
 
   frontend:
     runs-on: ubuntu-latest

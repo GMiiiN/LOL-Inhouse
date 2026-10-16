@@ -12,6 +12,11 @@ export function readStoredTheme(): Theme {
   }
 }
 
+// 현재 <html data-theme>에 적용된 테마. main.tsx가 시작할 때 저장값을 적용해 두므로 첫 화면에서도 저장값과 같다.
+export function readAppliedTheme(): Theme {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'
+}
+
 export function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute('data-theme', theme)
 }

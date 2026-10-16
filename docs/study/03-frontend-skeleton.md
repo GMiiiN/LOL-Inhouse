@@ -182,6 +182,7 @@ CSS 클래스·변수는 kebab-case 규칙에 따라 `errBg`는 `--err-bg`로 �
 실제로 겪은 것:
 - **템플릿이 예상과 달랐다**: 최신 `create-vite` react-ts 템플릿은 ESLint가 아니라 **oxlint**를 `npm run lint`에 연결하고, TypeScript 6·Vite 8을 쓴다. 요구가 "lint가 통과해야 한다"였으므로 ESLint를 추가로 설치하지 않고(의존성 최소화) 그대로 썼다. oxlint는 문제가 없으면 아무것도 출력하지 않고 종료 코드 0으로 끝난다 — 출력이 없다고 실행이 안 된 게 아니다(`echo $?`로 확인).
 - **템플릿 데모 코드 제거**: `App.tsx`, `App.css`, `index.css`, `assets/`, `public/icons.svg`는 데모용이라 지웠다. 남겨 두면 안 쓰는 CSS가 전역 스타일(`#root` 폭 제한 등)과 충돌한다. `public/favicon.svg`(Vite 기본 아이콘)는 남겼다 — 로고 확정 시 교체.
+- **테마 버튼과 실제 색이 어긋날 수 있었음 (Codex 리뷰로 발견·수정)**: 처음 `useTheme`는 시작 상태를 **localStorage 저장값**에서 읽었다. 시크릿 모드처럼 저장이 막힌 환경에서 라이트로 바꾼 뒤 공개 화면 → 담당자 화면으로 이동하면, 레이아웃이 바뀌며 토글 컴포넌트가 새로 만들어지고 저장값이 없으니 "다크"로 시작한다. 그런데 `<html data-theme>`은 라이트 그대로라 버튼 표시와 화면 색이 어긋나고, 다음 클릭도 색을 바꾸지 못했다. 조치: 시작 상태를 **지금 화면에 적용된 값**(`readAppliedTheme`, `<html data-theme>`)에서 읽게 바꿨다. 앱 시작 때 `main.tsx`가 저장값을 화면에 먼저 적용하므로 평소에는 둘이 같다. 결과: 저장이 막혀도 일치. 회귀 테스트 "localStorage가 막혀 있어도 다시 그려질 때 화면 테마와 버튼 표시가 일치한다" 추가(`vi.spyOn(Storage.prototype, 'setItem')`으로 저장 실패를 흉내).
 - **`/api` 프록시는 백엔드가 꺼져 있으면 502**: 개발 서버로 `/api/ping`을 호출해 보니 Spring이 없어서 `502`와 터미널의 `http proxy error ... ECONNREFUSED`가 나왔다. 프런트 버그가 아니라 8080이 안 떠 있다는 뜻이다. 반대로 `/ranking`은 200(SPA 대체 규칙).
 
 테스트에서 미리 막아 둔 것(이번 구현에서는 증상을 직접 겪지는 않았고, 알려진 함정이라 처음부터 방지):
