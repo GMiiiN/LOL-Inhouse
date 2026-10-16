@@ -1,0 +1,2 @@
+-- 기준선(baseline) 마이그레이션: 아직 테이블이 없다. 스키마는 M3에서 V2부터 추가한다.
+-- 설명: docs/study/02-backend-skeleton.md
