@@ -125,7 +125,8 @@ Actuator는 운영 중인 앱의 상태를 HTTP로 보여 주는 모듈. `health
 - 노출을 `health,info`로 제한한 이유: `env`, `beans`, `heapdump` 같은 엔드포인트는 비밀값·내부 구조를 드러낸다.
 
 ### 우아한 종료(graceful shutdown)
-기본값(`immediate`)은 종료 신호를 받으면 처리 중이던 요청도 끊는다. `graceful`은 새 요청은 거절하고 진행 중인 요청이 끝나길 기다렸다가(기본 최대 30초) 내려간다. 배포 때 요청이 중간에 끊겨 에러가 나는 것을 줄인다. Docker `stop`이 SIGTERM을 보내므로 컨테이너 배포(M7)와 맞는다.
+`immediate`는 종료 신호를 받으면 처리 중이던 요청도 끊는다. `graceful`은 새 요청은 거절하고 진행 중인 요청이 끝나길 기다렸다가(기본 최대 30초) 내려간다. 배포 때 요청이 중간에 끊겨 에러가 나는 것을 줄인다. Docker `stop`이 SIGTERM을 보내므로 컨테이너 배포(M7)와 맞는다.
+**정정(Codex 리뷰)**: 처음에 "기본값은 immediate"라고 적었으나 틀렸다. Boot 4.1.1의 설정 메타데이터(`spring-boot-web-server-4.1.1.jar`)를 확인하면 `server.shutdown` 기본값은 이미 `graceful`이다(Boot 3.4부터 바뀐 것으로 알려짐). `application.yml`에 적어 둔 `graceful`은 동작을 바꾸려는 게 아니라 **의도를 드러내려고 명시**한 것이다.
 
 ### open-in-view = false
 기본값(true)이면 HTTP 요청이 시작해서 끝날 때까지 JPA 영속성 컨텍스트(EntityManager)와 DB 커넥션이 열려 있다. 그러면 컨트롤러·뷰 단계에서 지연 로딩이 "우연히" 동작하는데, 쿼리가 어디서 나가는지 숨고 JSON 변환 도중에 쿼리가 터지며(N+1) 커넥션을 오래 잡는다. `false`면 트랜잭션(서비스) 안에서만 지연 로딩이 되고, 밖에서 접근하면 `LazyInitializationException`이 나서 문제를 일찍 알 수 있다. 서비스에서 필요한 데이터를 DTO로 다 만들어 내보내는 습관이 생긴다.
@@ -172,7 +173,7 @@ Security를 의존성에 넣기만 해도 모든 요청이 서블릿 필터 체�
 4. `ddl-auto: update` 대신 `validate` + Flyway를 쓰는 이유 세 가지는? (→ 2장, 6장)
 5. `open-in-view: false`일 때 컨트롤러에서 지연 로딩 연관을 읽으면 어떤 일이 생기고, 그게 왜 오히려 좋은가? (→ 6장)
 6. liveness와 readiness의 차이는? DB 장애 시 어느 쪽이 DOWN이 되어야 하나? (→ 6장 Actuator)
-7. graceful shutdown을 켜지 않으면 배포 중 어떤 문제가 생기나? (→ 6장)
+7. `server.shutdown`을 `immediate`로 두면 배포 중 어떤 문제가 생기나? Boot 4의 기본값은? (→ 6장, 기본값은 graceful)
 8. Actuator 엔드포인트를 `health,info`로만 노출한 이유는? (→ 6장)
 9. 테스트에 H2가 아니라 Testcontainers MySQL을 쓰는 이유와, `@ServiceConnection`이 하는 일은? yml의 `${DB_URL}`은 테스트에서 어떻게 되나? (→ 2장, 6장)
 10. 이 테스트가 MockMvc인 이유와 `RANDOM_PORT`와의 차이는? (→ 2장)

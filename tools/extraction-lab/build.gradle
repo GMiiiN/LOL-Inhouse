@@ -1,0 +1,27 @@
+plugins {
+    id 'application'
+}
+repositories { mavenCentral() }
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+dependencies {
+    implementation 'com.google.genai:google-genai:1.78.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+application { mainClass = 'com.lolinhouse.ingest.Lab' }
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+test { useJUnitPlatform() }
+run {
+    workingDir = projectDir
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+// 오프라인 매칭 튜닝: Gemini 호출 없이 out/crops로 비교 방식별 정확도 출력
+tasks.register('tune', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.lolinhouse.ingest.MatchTuner'
+    workingDir = projectDir
+    jvmArgs '-Dstdout.encoding=UTF-8'
+}
