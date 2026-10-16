@@ -1,0 +1,9 @@
+# 줄바꿈을 LF로 통일한다(Windows에서 작업해도 Linux CI·서버에서 스크립트가 깨지지 않게)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+gradlew text eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.jar binary
