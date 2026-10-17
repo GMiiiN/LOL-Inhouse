@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 외부 호출 없이 순수 규칙을 검증한다. 관련 노트: docs/study/05-extraction-lab.md */
+/** 외부 호출 없이 순수 규칙을 검증한다 */
 class PureLogicTest {
     @Test void boxUsesYFirstAndClips() {
         var r = Boxes.pixels(new int[]{100,200,900,800}, 200,100);

@@ -42,15 +42,19 @@ lol-inhouse/
   CLAUDE.md     프로젝트 규칙(네이밍, "변경마다 이유 설명", 테스트 원칙)
 ```
 
-## 데이터 모델 (인수인계서 §7 대체, M1에서 확정)
+## 데이터 모델 (인수인계서 §7 대체, M3 V2 스키마로 확정)
 
-- `player`(id, display_name, real_name null, is_registered, main_position null) — 미등록은 display_name=닉네임, 등록 시 실명으로 전환
-- `player_alias`(player_id, nickname unique) — 잘린 닉네임은 앞부분 ~70% 일치로 매칭
-- `inhouse_session`(start_date unique) → `duel`(session_id, seq) → `game_set`(duel_id, set_no, team1_side, winner_team, shot_date, duration_sec, fingerprint, image_hash, image_key, deleted_at)
-- `game_set_player`(set_id, player_id, team(1/2), position, champion_key, k, d, a, cs, gold, screen_row)
-- `game_set_ban`(set_id, turn 1~10, side, champion_key) — 10개 필수
-- `team_swap`(duel_id, before_set_no, position, player_from_team1, player_from_team2), `extraction_job`, `audit_log`
-- 지문 중복 차단: MySQL 생성 컬럼 `active_fingerprint = IF(deleted_at IS NULL, fingerprint, NULL)` 에 UNIQUE → 동시 저장·복구 충돌까지 DB가 막음
+실제 DDL: `backend/src/main/resources/db/migration/V2__core_schema.sql`, 설계: `docs/design/m3-design.md`.
+
+- `admin_account`(username unique, password_hash BCrypt) — 비었을 때만 env로 1회 생성
+- `player`(game_nickname, real_name null, main_position null) — 등록 여부 = `real_name IS NOT NULL`, 표시 이름 = 실명 없으면 game_nickname(계산, 저장 안 함)
+- `player_alias`(player_id, nickname, nickname_key unique `utf8mb4_0900_bin`) — 키는 Java `NicknameNormalizer.comparisonKey`. 자동 연결(한 글자 오인식·잘림)은 별칭으로 저장하지 않음
+- `inhouse_session`(start_date unique) → `duel`(session_id, seq, (session_id, seq) unique) → `game_set`(duel_id, set_no, team1_side, winner_team, top_team null, shot_date, duration_sec, 팀별 표시 K/D/A/골드 8개, fingerprint, image_hash, image_key, deleted_at)
+- `game_set_player`(game_set_id, player_id, team, position, screen_row, champion_key, kills, deaths, assists, cs, gold)
+- `game_set_ban`(game_set_id, turn 1~10, side, champion_key) — turn 홀수 BLUE / 짝수 RED CHECK
+- 열거형은 `VARCHAR ascii_bin` + CHECK, 시각은 `DATETIME(6)` UTC(`Instant`), 날짜는 `DATE`(`LocalDate`)
+- 지문·세트 번호 중복 차단: STORED 생성 컬럼 `active_fingerprint`, `active_set_no`(삭제되면 NULL)에 UNIQUE → 동시 저장·복구 충돌까지 DB가 막음
+- 미뤄 둔 테이블: `extraction_job`(M4, V3), `team_swap`·`audit_log`(M6)
 - 점수·피어리스·통계는 저장하지 않고 조회 시 계산(데이터 규모가 작아 정합성 우선)
 
 ## 핵심 도메인 규칙 (순수 Java, TDD 대상)
@@ -98,7 +102,7 @@ lol-inhouse/
 
 구현하면서 사용자가 나중에 공부할 수 있도록 모든 설계와 코드를 기록한다. 코드에 설명을 몰아넣으면 읽기 어려워지므로 **설명은 문서에, 코드에는 역할 요약과 문서 링크**를 둔다.
 
-- `docs/study/NN-주제.md`: 마일스톤·기능 단위 학습 노트. 작업이 끝날 때마다 같이 작성하고, 커밋에 함께 넣는다.
+- `docs/study/NN-주제.md`: 마일스톤·기능 단위 학습 노트. 작업이 끝날 때마다 작성한다(로컬 전용, git 제외).
   1. 무엇을 만들었나 (한 줄)
   2. 왜 이 구조인가: 선택지, 고른 이유, 버린 대안과 그 이유
   3. 흐름: "어디서 → 어디로, 어떤 데이터가, 누구에게, 그다음 무엇이" 단계별 (필요하면 시퀀스 다이어그램)
@@ -110,7 +114,7 @@ lol-inhouse/
 - `docs/adr/NNN-*.md`: 되돌리기 어려운 설계 결정만 짧게 (배경·결정·대안·결과).
 - 코드 주석: 클래스·공개 메서드에 "역할 + 관련 학습 노트 경로"를 적고, 규칙이 숨어 있는 줄(예: 밴 순서 계산, 지문 생성)에는 그 규칙을 한 줄로 적는다. 뻔한 줄에는 달지 않는다.
 - 채팅: 각 작업 전에 무엇을 왜 하는지 짧게 설명하고, 작업 후 학습 노트 위치를 알려준다.
-- `docs/study/README.md`: 노트 목차와 추천 읽는 순서.
+- `docs/study/README.md`: 노트 목차와 추천 읽는 순서(로컬 전용).
 
 ## 검증 방법
 

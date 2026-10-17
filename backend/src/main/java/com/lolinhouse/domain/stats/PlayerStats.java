@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 /**
  * 역할: 한 선수의 프로필 통계(전체, 포지션별, 챔피언별, 참여율, 대결 개인 결과)를 세트 기록 목록에서 계산한다.
  * 모든 메서드는 "전체 기록 + 대상 선수 ID"를 받아 내부에서 그 선수의 기록만 고른다.
- * 설명: docs/study/07-domain-player-stats.md
  */
 public final class PlayerStats {
 

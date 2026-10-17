@@ -8,7 +8,6 @@ import java.util.List;
 /**
  * 결과창 행 순서에 실제 포지션을 배정하는 규칙(순수 계산, 상태 없음).
  * 위쪽 팀은 "캡처한 사람 포지션 + 나머지 기본 순서", 아래쪽 팀은 탑→서폿.
- * 설명: docs/study/06-domain-set-rules.md
  */
 public final class PositionAssignment {
 

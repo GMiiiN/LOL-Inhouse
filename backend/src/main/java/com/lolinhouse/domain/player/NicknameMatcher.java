@@ -12,14 +12,17 @@ import java.util.Map;
  * 역할: AI가 읽은 닉네임을 알려진 별칭들과 비교해 EXACT / TRUNCATED_AUTO / CANDIDATES / NEW_UNREGISTERED로 분류한다.
  * 규칙: 비교는 대소문자를 구분하지 않는다(NicknameNormalizer.comparisonKey). 정확히 한 선수와 일치할 때만 EXACT,
  * 잘린 닉네임(끝이 "…")은 앞부분 유사도 0.70 이상인 선수가 정확히 한 명일 때만 자동 연결한다.
- * 그 밖의 비슷한 닉네임(전체 닉네임의 오인식 포함)은 자동 연결하지 않고 후보로 보여준다.
- * 설명: docs/study/07-domain-player-stats.md
+ * 잘리지 않은 닉네임은 3글자 이상이고 편집 거리 1 이하인 선수가 정확히 한 명이면 ONE_CHAR_AUTO로 자동 연결한다
+ * (사용자 결정 2026-10-16: M0에서 닉네임 OCR 오류가 모두 한 글자였다).
+ * 그 밖의 비슷한 닉네임(두 글자 이상 차이, 한 글자 차이 선수가 여럿)은 자동 연결하지 않고 후보로 보여준다.
  */
 public class NicknameMatcher {
 
     static final double AUTO_LINK_THRESHOLD = 0.70;
     static final double CANDIDATE_THRESHOLD = 0.5;
     static final int MAX_CANDIDATES = 3;
+    static final int ONE_CHAR_MAX_DISTANCE = 1;
+    static final int ONE_CHAR_MIN_LENGTH = 3;
     private static final String ELLIPSIS = "…";
 
     public NicknameMatchResult match(String extractedNickname, List<KnownAlias> aliases) {
@@ -42,6 +45,12 @@ public class NicknameMatcher {
             if (exactMatches.size() > 1) {
                 // 서로 다른 선수의 별칭이 같은 키로 정규화됨: 임의로 고르지 않고 담당자가 고른다.
                 return NicknameMatchResult.candidates(exactMatches, false);
+            }
+            // 정확 일치가 없으니 한 글자 차이는 곧 거리 1이다. 한 선수만 해당될 때만 자동 연결한다.
+            List<Candidate> oneCharMatches = oneCharMatchesByPlayer(visibleKey, aliases);
+            if (oneCharMatches.size() == 1) {
+                Candidate only = oneCharMatches.get(0);
+                return NicknameMatchResult.oneCharAuto(only.playerId(), only.similarity(), ONE_CHAR_MAX_DISTANCE);
             }
         }
 
@@ -69,6 +78,22 @@ public class NicknameMatcher {
         for (KnownAlias alias : aliases) {
             if (NicknameNormalizer.comparisonKey(alias.nickname()).equals(visibleKey)) {
                 byPlayer.putIfAbsent(alias.playerId(), new Candidate(alias.playerId(), alias.nickname(), 1.0));
+            }
+        }
+        return new ArrayList<>(byPlayer.values());
+    }
+
+    /** 별칭과 편집 거리 1 이하인 선수들(선수당 한 번). 입력이 너무 짧으면(3글자 미만) 우연히 겹치기 쉬워 비운다. */
+    private List<Candidate> oneCharMatchesByPlayer(String visibleKey, List<KnownAlias> aliases) {
+        if (visibleKey.codePointCount(0, visibleKey.length()) < ONE_CHAR_MIN_LENGTH) {
+            return List.of();
+        }
+        Map<String, Candidate> byPlayer = new LinkedHashMap<>();
+        for (KnownAlias alias : aliases) {
+            String aliasKey = NicknameNormalizer.comparisonKey(alias.nickname());
+            if (Levenshtein.distance(visibleKey, aliasKey) <= ONE_CHAR_MAX_DISTANCE) {
+                byPlayer.putIfAbsent(alias.playerId(),
+                        new Candidate(alias.playerId(), alias.nickname(), Levenshtein.similarity(visibleKey, aliasKey)));
             }
         }
         return new ArrayList<>(byPlayer.values());

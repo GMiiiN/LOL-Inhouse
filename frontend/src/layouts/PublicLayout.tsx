@@ -1,4 +1,4 @@
-// 공개 화면 공통 틀(헤더 + 본문 자리 Outlet). 노트: docs/study/03-frontend-skeleton.md
+// 공개 화면 공통 틀(헤더 + 본문 자리 Outlet)
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 

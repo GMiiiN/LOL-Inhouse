@@ -161,16 +161,67 @@ class SetDraftValidatorTest {
     }
 
     @Test
-    void 제한_챔피언을_픽했으면_경고한다() {
+    void 이전_세트에서_픽한_챔피언을_다시_픽하면_오류다() {
         // 샘플 1의 픽 top3, bottom2 가 이전 세트에서 이미 쓰였다고 가정
         ValidationContext context =
                 new ValidationContext(1, DuelTeam.TEAM1, Set.of("top3", "bottom2", "unrelated"));
 
         ValidationResult result = SetDraftValidator.validate(SetDraftFixtures.sample1(), context);
 
+        assertThat(result.canSave()).isFalse();
+        assertThat(result.errors()).hasSize(1);
+        assertThat(result.errors().get(0)).contains("이전 세트", "top3", "bottom2", "새 대결");
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test
+    void 같은_세트에서_같은_챔피언을_두_번_픽하면_오류다() {
+        SetDraft draft = SetDraftFixtures.sample1();
+        List<DraftPlayer> bottom = new ArrayList<>(draft.bottomTeam().players());
+        DraftPlayer first = bottom.get(0);
+        // 아래쪽 첫 선수가 위쪽 첫 선수와 같은 챔피언(top1)을 픽했다고 바꾼다
+        bottom.set(0, new DraftPlayer(first.playerId(), first.position(), "top1",
+                first.kills(), first.deaths(), first.assists(), first.gold()));
+        DraftTeam bottomTeam = new DraftTeam(bottom, draft.bottomTeam().displayedKills(),
+                draft.bottomTeam().displayedDeaths(), draft.bottomTeam().displayedAssists(),
+                draft.bottomTeam().displayedGold());
+        SetDraft duplicated = new SetDraft(draft.topSide(), draft.capturerPosition(), draft.topTeam(),
+                bottomTeam, draft.bans());
+
+        ValidationResult result = SetDraftValidator.validate(duplicated, FIRST_SET);
+
+        assertThat(result.errors()).hasSize(1);
+        assertThat(result.errors().get(0)).contains("두 번 픽", "top1");
+    }
+
+    @Test
+    void 같은_세트에서_같은_챔피언을_두_번_밴하면_오류다() {
+        SetDraft draft = SetDraftFixtures.sample1();
+        List<String> bans = new ArrayList<>(draft.bans());
+        bans.set(9, "ban1");
+        SetDraft duplicated = new SetDraft(draft.topSide(), draft.capturerPosition(), draft.topTeam(),
+                draft.bottomTeam(), bans);
+
+        ValidationResult result = SetDraftValidator.validate(duplicated, FIRST_SET);
+
+        assertThat(result.errors()).hasSize(1);
+        assertThat(result.errors().get(0)).contains("두 번 밴", "ban1");
+    }
+
+    @Test
+    void 이미_픽된_챔피언을_밴하는_것은_허용한다() {
+        // 이전 세트 픽(prev1)을 밴하고, 이 세트 픽(top1)과 같은 챔피언도 밴 목록에 있다
+        SetDraft draft = SetDraftFixtures.sample1();
+        List<String> bans = new ArrayList<>(draft.bans());
+        bans.set(0, "prev1");
+        bans.set(1, "top1");
+        SetDraft banned = new SetDraft(draft.topSide(), draft.capturerPosition(), draft.topTeam(),
+                draft.bottomTeam(), bans);
+        ValidationContext context = new ValidationContext(2, DuelTeam.TEAM2, Set.of("prev1"));
+
+        ValidationResult result = SetDraftValidator.validate(banned, context);
+
         assertThat(result.errors()).isEmpty();
-        assertThat(result.warnings()).hasSize(1);
-        assertThat(result.warnings().get(0)).contains("피어리스", "top3", "bottom2");
     }
 
     @Test
@@ -250,7 +301,7 @@ class SetDraftValidatorTest {
 
         assertThat(result.errors()).anyMatch(message -> message.contains("비어 있는 선수 행"));
         assertThat(result.canSave()).isFalse();
-        assertThat(result.warnings()).anyMatch(message -> message.contains("피어리스") && message.contains("top1"));
+        assertThat(result.errors()).anyMatch(message -> message.contains("피어리스") && message.contains("top1"));
     }
 
     // ----- Codex 리뷰 반영: int 오버플로 -----

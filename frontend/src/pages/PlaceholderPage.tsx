@@ -1,4 +1,4 @@
-// 아직 구현되지 않은 화면의 자리표시자. 어느 마일스톤이 채우는지만 보여 준다. 노트: docs/study/03-frontend-skeleton.md
+// 아직 구현되지 않은 화면의 자리표시자. 어느 마일스톤이 채우는지만 보여 준다
 type PlaceholderPageProps = {
   title: string
   milestone: string

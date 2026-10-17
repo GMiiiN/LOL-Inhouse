@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
  * 세트 중복 방지용 지문. 결과창의 날짜 + 경기 시간 + 양 팀 킬·골드 합계로 만든다.
  * 같은 경기를 어느 팀 클라이언트에서 캡처해도 같도록 두 팀 값을 정해진 순서로 놓는다.
  * 중복 검사 자체(DB UNIQUE)는 M3 저장 계층이 맡는다.
- * 설명: docs/study/06-domain-set-rules.md, 결정: docs/adr/004-set-fingerprint.md
+ * 설명: 결정: docs/adr/004-set-fingerprint.md
  */
 public record SetFingerprint(String canonical) {
 

@@ -7,11 +7,11 @@ import java.time.Instant;
 import java.util.*;
 import javax.imageio.ImageIO;
 
-/** 샘플 실행·평가·보고서 생성을 조율한다. 관련 노트: docs/study/05-extraction-lab.md */
+/** 샘플 실행·평가·보고서 생성을 조율한다 */
 public final class Lab {
     private static final ObjectMapper JSON=new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     private Lab() {}
-    /** 프로젝트 또는 저장소 루트에서 실행한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 프로젝트 또는 저장소 루트에서 실행한다 */
     public static void main(String[] args) {
         try { execute(findRoot(Path.of("").toAbsolutePath())); }
         catch(Exception e) {

@@ -125,36 +125,36 @@ class NicknameMatcherTest {
     // ---------- 3. CANDIDATES ----------
 
     @Test
-    void oneCharacterOcrErrorInFullNicknameIsCandidateNotAutoLink() {
-        var result = matcher.match("Moonlight_Fax", List.of(alias("p1", "Moonlight_Fox")));
+    void twoCharacterErrorInFullNicknameIsCandidateNotAutoLink() {
+        var result = matcher.match("Moonlight_Fay", List.of(alias("p1", "Moonlight_Fox")));
 
         assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
         assertThat(result.playerId()).isNull();
         assertThat(result.candidates()).hasSize(1);
         assertThat(result.candidates().get(0).playerId()).isEqualTo("p1");
-        assertThat(result.candidates().get(0).similarity()).isBetween(0.92, 0.93);
+        assertThat(result.candidates().get(0).similarity()).isBetween(0.84, 0.85);
     }
 
     @Test
-    void oneCharacterErrorInHangulNicknameIsCandidate() {
-        var result = matcher.match("달빛여오", List.of(alias("p1", "달빛여우")));
+    void twoCharacterErrorInHangulNicknameIsCandidate() {
+        var result = matcher.match("달빛오오", List.of(alias("p1", "달빛여우")));
 
         assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
-        assertThat(result.candidates().get(0).similarity()).isEqualTo(0.75);
+        assertThat(result.candidates().get(0).similarity()).isEqualTo(0.5);
     }
 
     @Test
     void candidatesAreLimitedToThreeBestFirst() {
         var result = matcher.match("ABCDEFGH", List.of(
-                alias("p1", "ABCDEFGX"),   // 7/8 = 0.875
-                alias("p2", "ABCDXXXX"),   // 4/8 = 0.5
-                alias("p3", "ABCDEFXX"),   // 6/8 = 0.75
-                alias("p4", "ABCDEXXX"),   // 5/8 = 0.625
-                alias("p5", "ZZZZZZZZ")));  // 0
+                alias("p1", "ABCDEFXX"),     // 6/8 = 0.75
+                alias("p2", "ABCDXXXX"),     // 4/8 = 0.5
+                alias("p3", "ABCDEXXX"),     // 5/8 = 0.625
+                alias("p4", "ABCDEFGHXY"),   // 8/10 = 0.8
+                alias("p5", "ZZZZZZZZ")));    // 0
 
         assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
         assertThat(result.candidates()).extracting(NicknameMatchResult.Candidate::playerId)
-                .containsExactly("p1", "p3", "p4");
+                .containsExactly("p4", "p1", "p3");
     }
 
     @Test
@@ -167,10 +167,148 @@ class NicknameMatcherTest {
     @Test
     void candidatesHaveOneEntryPerPlayerWithBestAlias() {
         var result = matcher.match("ABCDEFGH", List.of(
-                alias("p1", "ABCDXXXX"), alias("p1", "ABCDEFGX"), alias("p2", "ABCDEFXX")));
+                alias("p1", "ABCDXXXX"), alias("p1", "ABCDEFXX"), alias("p2", "ABCDEXXX")));
 
         assertThat(result.candidates()).extracting(NicknameMatchResult.Candidate::playerId).containsExactly("p1", "p2");
-        assertThat(result.candidates().get(0).nickname()).isEqualTo("ABCDEFGX");
+        assertThat(result.candidates().get(0).nickname()).isEqualTo("ABCDEFXX");
+    }
+
+    // ---------- 3-1. ONE_CHAR_AUTO (사용자 결정 2026-10-16, PR #2 댓글) ----------
+
+    @Test
+    void oneSubstitutedCharacterAutoLinks() {
+        var result = matcher.match("abcd", List.of(alias("p1", "abxd"), alias("p2", "zzzzzz")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+        assertThat(result.distance()).isEqualTo(1);
+        assertThat(result.similarity()).isEqualTo(0.75);
+        assertThat(result.fullNicknameRequired()).isFalse();
+    }
+
+    @Test
+    void oneInsertedCharacterAutoLinks() {
+        // 입력에 글자가 하나 더 읽힘
+        var result = matcher.match("abcxd", List.of(alias("p1", "abcd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+        assertThat(result.distance()).isEqualTo(1);
+    }
+
+    @Test
+    void oneDeletedCharacterAutoLinks() {
+        // 입력에서 글자가 하나 빠짐
+        var result = matcher.match("abd", List.of(alias("p1", "abcd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+        assertThat(result.distance()).isEqualTo(1);
+    }
+
+    @Test
+    void oneCharacterAutoLinkIgnoresCase() {
+        var result = matcher.match("ABxD", List.of(alias("p1", "abcd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+        assertThat(result.distance()).isEqualTo(1);
+    }
+
+    @Test
+    void oneSubstitutedHangulCharacterAutoLinks() {
+        var result = matcher.match("달빛여오", List.of(alias("p1", "달빛여우")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+        assertThat(result.distance()).isEqualTo(1);
+    }
+
+    @Test
+    void oneCharacterAutoLinkAppliesAfterNormalization() {
+        var result = matcher.match("  ＡBxD ", List.of(alias("p1", "abcd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+    }
+
+    @Test
+    void oneCharacterAutoLinkAtMinimumLengthThree() {
+        var result = matcher.match("abx", List.of(alias("p1", "abc")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+    }
+
+    @Test
+    void twoPlayersEachOneCharacterAwayAreCandidates() {
+        var result = matcher.match("abcd", List.of(alias("p1", "abxd"), alias("p2", "abcy")));
+
+        assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
+        assertThat(result.playerId()).isNull();
+        assertThat(result.candidates()).extracting(NicknameMatchResult.Candidate::playerId)
+                .containsExactlyInAnyOrder("p1", "p2");
+    }
+
+    @Test
+    void twoAliasesOfSamePlayerOneCharacterAwayStillAutoLink() {
+        var result = matcher.match("abcd", List.of(alias("p1", "abxd"), alias("p1", "abcy")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+    }
+
+    @Test
+    void onlyThePlayerAtDistanceOneAutoLinksWhenAnotherIsAtDistanceTwo() {
+        var result = matcher.match("abcd", List.of(alias("p1", "abxd"), alias("p2", "axyd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.ONE_CHAR_AUTO);
+        assertThat(result.playerId()).isEqualTo("p1");
+    }
+
+    @Test
+    void inputOfTwoCharactersIsNotAutoLinkedEvenAtDistanceOne() {
+        var result = matcher.match("ab", List.of(alias("p1", "ax")));
+
+        assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
+        assertThat(result.candidates()).extracting(NicknameMatchResult.Candidate::playerId).containsExactly("p1");
+    }
+
+    @Test
+    void distanceTwoIsNotAutoLinked() {
+        var result = matcher.match("abcd", List.of(alias("p1", "axyd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
+        assertThat(result.candidates().get(0).similarity()).isEqualTo(0.5);
+    }
+
+    @Test
+    void distanceTwoWithLowSimilarityCreatesNewPlayer() {
+        var result = matcher.match("abc", List.of(alias("p1", "axy")));
+
+        assertThat(result.type()).isEqualTo(MatchType.NEW_UNREGISTERED);
+    }
+
+    @Test
+    void exactMatchWinsOverAnotherPlayerOneCharacterAway() {
+        var result = matcher.match("abcd", List.of(alias("p1", "abxd"), alias("p2", "abcd")));
+
+        assertThat(result.type()).isEqualTo(MatchType.EXACT);
+        assertThat(result.playerId()).isEqualTo("p2");
+    }
+
+    @Test
+    void truncatedInputNeverUsesOneCharacterRule() {
+        // 잘린 입력은 기존 규칙(앞부분 유사도 0.70)만 따른다.
+        var result = matcher.match("abcd…", List.of(alias("p1", "abxdefgh")));
+
+        assertThat(result.type()).isEqualTo(MatchType.TRUNCATED_AUTO);
+        assertThat(result.fullNicknameRequired()).isTrue();
+    }
+
+    @Test
+    void distanceIsZeroForNonOneCharResults() {
+        assertThat(matcher.match("abcd", List.of(alias("p1", "abcd"))).distance()).isZero();
+        assertThat(matcher.match("abcd", List.of(alias("p1", "axyd"))).distance()).isZero();
     }
 
     // ---------- 4. NEW_UNREGISTERED ----------
@@ -228,7 +366,7 @@ class NicknameMatcherTest {
     void resultDoesNotChangeWhenInputListIsMutatedLater() {
         List<NicknameMatchResult.Candidate> source = new ArrayList<>(
                 List.of(new NicknameMatchResult.Candidate("p1", "Moonlight_Fox", 0.9)));
-        var result = new NicknameMatchResult(MatchType.CANDIDATES, null, 0.0, source, false, null);
+        var result = new NicknameMatchResult(MatchType.CANDIDATES, null, 0.0, 0, source, false, null);
 
         source.clear();
 
@@ -237,7 +375,7 @@ class NicknameMatcherTest {
 
     @Test
     void candidatesListOfResultCannotBeModified() {
-        var result = matcher.match("Moonlight_Fax", List.of(alias("p1", "Moonlight_Fox")));
+        var result = matcher.match("Moonlight_Fay", List.of(alias("p1", "Moonlight_Fox")));
 
         assertThatThrownBy(() -> result.candidates().add(new NicknameMatchResult.Candidate("p9", "x", 1.0)))
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -305,11 +443,11 @@ class NicknameMatcherTest {
 
     @Test
     void caseOnlyDifferenceDoesNotCountAsEditInSimilarity() {
-        // 대소문자를 무시하므로 "Moonlight_FAX" vs "moonlight_fox"는 한 글자 차이(12/13)
-        var result = matcher.match("Moonlight_FAX", List.of(alias("p1", "moonlight_fox")));
+        // 대소문자를 무시하므로 "Moonlight_FAY" vs "moonlight_fox"는 두 글자 차이(11/13)
+        var result = matcher.match("Moonlight_FAY", List.of(alias("p1", "moonlight_fox")));
 
         assertThat(result.type()).isEqualTo(MatchType.CANDIDATES);
-        assertThat(result.candidates().get(0).similarity()).isBetween(0.92, 0.93);
+        assertThat(result.candidates().get(0).similarity()).isBetween(0.84, 0.85);
     }
 
     @Test
@@ -321,7 +459,7 @@ class NicknameMatcherTest {
 
     @Test
     void candidateKeepsOriginalAliasSpelling() {
-        var result = matcher.match("moonlight_fax", List.of(alias("p1", "Moonlight_Fox")));
+        var result = matcher.match("moonlight_fay", List.of(alias("p1", "Moonlight_Fox")));
 
         assertThat(result.candidates().get(0).nickname()).isEqualTo("Moonlight_Fox");
     }

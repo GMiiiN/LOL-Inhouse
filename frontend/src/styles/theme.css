@@ -1,5 +1,5 @@
 /* 색 토큰: 승인된 와이어프레임 값 그대로. 기본은 다크, <html data-theme="light">로 라이트 전환.
-   토큰별 쓰임: docs/study/03-frontend-skeleton.md */
+*/
 :root,
 [data-theme='dark'] {
   --bg: #11131a;

@@ -14,8 +14,8 @@ import java.util.function.ToIntFunction;
 
 /**
  * 저장 전 세트 초안 검증. errors는 저장을 막고, warnings는 담당자에게 보여주기만 한다(유저플로우 §5.5).
+ * 챔피언 중복(2026-10-16 결정): 세트 안 픽 중복·피어리스 위반·세트 안 밴 중복은 오류. 이미 픽된 챔피언을 밴하는 건 허용.
  * 지문 중복은 여기서 검사하지 않는다. 동시 저장까지 막아야 해서 M3에서 DB UNIQUE로 처리한다.
- * 설명: docs/study/06-domain-set-rules.md
  */
 public final class SetDraftValidator {
 
@@ -26,7 +26,7 @@ public final class SetDraftValidator {
     }
 
     /**
-     * 경고 계산에 필요한 대결 정보.
+     * 피어리스 검사와 경고 계산에 필요한 대결 정보.
      *
      * @param setNo               이 세트의 대결 안 순서(1부터)
      * @param topTeam             위쪽 팀이 1팀/2팀 중 어디인지(자동 판별 결과)
@@ -57,6 +57,7 @@ public final class SetDraftValidator {
         List<String> warnings = new ArrayList<>();
 
         checkErrors(draft, errors);
+        checkChampionDuplicates(draft, context, errors);
         checkWarnings(draft, context, warnings);
         return new ValidationResult(errors, warnings);
     }
@@ -118,12 +119,37 @@ public final class SetDraftValidator {
         return bans.size() == BAN_COUNT && bans.stream().noneMatch(SetDraftValidator::isBlank);
     }
 
+    // ----- 챔피언 중복 오류 -----
+
+    private static void checkChampionDuplicates(SetDraft draft, ValidationContext context, List<String> errors) {
+        List<String> picks = allPlayers(draft).stream().map(DraftPlayer::championKey)
+                .filter(key -> !isBlank(key)).toList();
+        List<String> duplicatePicks = duplicates(picks);
+        if (!duplicatePicks.isEmpty()) {
+            errors.add("같은 세트에서 같은 챔피언을 두 번 픽했습니다: " + String.join(", ", duplicatePicks));
+        }
+        List<String> violations = Fearless.violations(context.restrictedChampions(), picks);
+        if (!violations.isEmpty()) {
+            errors.add("피어리스 위반: 이 대결의 이전 세트에서 이미 픽한 챔피언입니다: " + String.join(", ", violations)
+                    + " (인식 오류면 고치고, 멤버를 바꿔 피어리스를 초기화했다면 새 대결로 등록하세요)");
+        }
+        List<String> duplicateBans = duplicates(draft.bans().stream().filter(key -> !isBlank(key)).toList());
+        if (!duplicateBans.isEmpty()) {
+            errors.add("같은 세트에서 같은 챔피언을 두 번 밴했습니다: " + String.join(", ", duplicateBans));
+        }
+    }
+
+    /** 두 번 이상 나온 값(처음 나온 순서대로, 한 번씩). */
+    private static List<String> duplicates(List<String> values) {
+        Set<String> seen = new HashSet<>();
+        return values.stream().filter(value -> !seen.add(value)).distinct().toList();
+    }
+
     // ----- 경고 -----
 
     private static void checkWarnings(SetDraft draft, ValidationContext context, List<String> warnings) {
         checkTeamTotals("위쪽 팀", draft.topTeam(), warnings);
         checkTeamTotals("아래쪽 팀", draft.bottomTeam(), warnings);
-        checkFearless(draft, context, warnings);
         if (draft.topSide() != null && context.topTeam() != null) {
             DuelTeamRules.sideWarning(context.topTeam(), context.setNo(), draft.topSide())
                     .ifPresent(warnings::add);
@@ -154,15 +180,6 @@ public final class SetDraftValidator {
     // int 합이 넘쳐서 표시값과 우연히 같아지지 않도록 long으로 더한다
     private static long sum(List<DraftPlayer> players, ToIntFunction<DraftPlayer> value) {
         return players.stream().mapToLong(value::applyAsInt).sum();
-    }
-
-    private static void checkFearless(SetDraft draft, ValidationContext context, List<String> warnings) {
-        List<String> picks = allPlayers(draft).stream().map(DraftPlayer::championKey).filter(Objects::nonNull).toList();
-        List<String> violations = Fearless.violations(context.restrictedChampions(), picks);
-        if (!violations.isEmpty()) {
-            warnings.add("피어리스 제한 챔피언을 픽했습니다: " + String.join(", ", violations)
-                    + " (인식 오류이거나 초기화를 빠뜨렸을 수 있습니다)");
-        }
     }
 
     // ----- 공통 -----

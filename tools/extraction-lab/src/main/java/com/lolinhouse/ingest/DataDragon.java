@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.*;
 import javax.imageio.ImageIO;
 
-/** 버전별 공식 자료만 캐시한다. 관련 노트: docs/study/05-extraction-lab.md */
+/** 버전별 공식 자료만 캐시한다 */
 public final class DataDragon implements AutoCloseable {
     private static final String BASE="https://ddragon.leagueoflegends.com";
     private final Path cache;
@@ -16,7 +16,7 @@ public final class DataDragon implements AutoCloseable {
     private final ObjectMapper mapper=new ObjectMapper();
     private String version;
     public DataDragon(Path cache) { this.cache=cache; }
-    /** 이번 실행의 버전을 리포트에 남긴다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 이번 실행의 버전을 리포트에 남긴다 */
     public String version() { return version; }
     /** 직접 만든 HttpClient의 연결·스레드를 정리한다(Java 21부터 HttpClient가 AutoCloseable). M4에서는 주입받는 구조로 바꾼다. */
     @Override public void close() { http.close(); }
@@ -34,7 +34,7 @@ public final class DataDragon implements AutoCloseable {
         Files.write(path,bytes);
         return bytes;
     }
-    /** 매 실행 최신 버전을 조회하고 해당 버전의 목록·아이콘을 재사용한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 매 실행 최신 버전을 조회하고 해당 버전의 목록·아이콘을 재사용한다 */
     public List<IconMatcher.Icon> load() throws Exception {
         version=mapper.readTree(fetch(BASE+"/api/versions.json")).path(0).asText();
         if(!version.matches("[0-9]+\\.[0-9]+\\.[0-9]+")) throw new IllegalStateException("버전 형식 오류");

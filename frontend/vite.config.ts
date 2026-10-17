@@ -1,4 +1,4 @@
-// 개발 서버(프록시)와 Vitest 설정. 노트: docs/study/03-frontend-skeleton.md
+// 개발 서버(프록시)와 Vitest 설정
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 

@@ -9,7 +9,6 @@ import java.util.List;
 /**
  * 저장 전 세트 초안(확인 화면에서 수정 중인 값). 검증 전이라 null·빈 값이 들어올 수 있어 값은 검사하지 않는다.
  * 목록은 복사해 두고 수정할 수 없게 막아서, 만든 뒤에는 바뀌지 않는다. 검증은 {@link SetDraftValidator}가 맡는다.
- * 설명: docs/study/06-domain-set-rules.md
  *
  * @param topSide           위쪽 팀 진영
  * @param capturerPosition  캡처한 사람의 실제 포지션

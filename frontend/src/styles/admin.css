@@ -1,0 +1,255 @@
+/* 담당자 화면(로그인·선수 관리·내전 관리) 전용 스타일. 색은 theme.css 토큰만 사용한다. */
+.form-page {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.form-page h1,
+.app-main h1 {
+  margin: 0 0 16px;
+  font-size: 22px;
+}
+
+.app-main h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.muted-text {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.stack-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stack-form label,
+.inline-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.stack-form input,
+.stack-form select,
+.inline-form input,
+.inline-form select {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.primary-button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--btn);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.primary-button:disabled,
+.header-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
+.push-right {
+  margin-left: auto;
+}
+
+.field-error {
+  margin: 0;
+  color: var(--err);
+  font-size: 13px;
+}
+
+.error-notice {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--err-bg);
+  color: var(--err);
+  font-size: 13px;
+}
+
+.error-notice p {
+  margin: 0;
+}
+
+.error-notice ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.error-notice a {
+  text-decoration: underline;
+}
+
+.panel {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.page-title-row h1 {
+  margin: 0;
+}
+
+.nickname-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.nickname-row {
+  display: flex;
+  gap: 8px;
+}
+
+.nickname-row input {
+  flex: 1;
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.player-card {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.player-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.player-card-header h2 {
+  margin: 0;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.chip-warn {
+  color: var(--warn);
+}
+
+.alias-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.alias-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 6px;
+  background: var(--panel2);
+  font-size: 13px;
+}
+
+.alias-delete {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.player-edit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.data-table th {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.data-table a {
+  color: var(--blue);
+}
+
+.duel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.duel-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}

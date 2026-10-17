@@ -1,4 +1,4 @@
-# PR·push마다 백엔드와 프런트를 빌드·테스트한다. 설명: docs/study/04-ci.md
+# PR·push마다 백엔드와 프런트를 빌드·테스트한다
 name: ci
 
 on:
@@ -21,7 +21,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       # GitHub 러너에는 Docker가 있어 Testcontainers MySQL 테스트가 그대로 돈다. .env는 없다.
       # build = 컴파일 + 테스트 + 실행 jar 패키징(bootJar). 배포 산출물이 실제로 만들어지는지까지 확인한다.
+      # TEST_TZ: 로컬(서울)과 다른 JVM 시간대(UTC)에서도 시간 저장·조회가 같은지 확인한다
       - run: ./gradlew build --console=plain
+        env:
+          TEST_TZ: UTC
 
   extraction-lab:
     runs-on: ubuntu-latest

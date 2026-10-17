@@ -95,6 +95,12 @@ class DuelTeamRulesTest {
     }
 
     @Test
+    void 직전_세트의_위쪽_팀을_모르면_기본_진영이_없다() {
+        // 수동 입력 세트는 top_team이 NULL이라 다음 세트 기본값을 줄 수 없다
+        assertThat(DuelTeamRules.defaultTopSide(2, null)).isEmpty();
+    }
+
+    @Test
     void 직전_세트의_위쪽_팀이_1팀이었으면_다음_세트_기본_진영은_번갈아_바뀐다() {
         // 1세트 위쪽 팀 = 1팀 -> 2세트에도 위쪽에 1팀이 온다고 가정하면 1팀은 레드
         assertThat(DuelTeamRules.defaultTopSide(2, DuelTeam.TEAM1)).isEqualTo(Optional.of(Side.RED));

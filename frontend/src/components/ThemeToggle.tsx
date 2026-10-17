@@ -1,4 +1,4 @@
-// 다크/라이트 전환 버튼. 노트: docs/study/03-frontend-skeleton.md
+// 다크/라이트 전환 버튼
 import { useTheme } from '../theme/useTheme'
 
 export function ThemeToggle() {

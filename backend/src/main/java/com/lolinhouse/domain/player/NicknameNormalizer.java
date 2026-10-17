@@ -8,7 +8,6 @@ import java.util.Locale;
  * normalize = 화면·저장용 표기(NFKC, 가장자리 공백 제거, 내부 공백 하나로, 대소문자 유지).
  * comparisonKey = 비교용 키(normalize + 소문자). 대소문자는 구분하지 않기로 했다(사용자 결정 2026-10-16).
  * M3의 "정규화 닉네임 UNIQUE 키"도 comparisonKey와 같은 규칙으로 만들어야 한다.
- * 설명: docs/study/07-domain-player-stats.md
  */
 public final class NicknameNormalizer {
 

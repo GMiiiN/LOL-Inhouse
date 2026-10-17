@@ -47,4 +47,4 @@ API 지연에는 백오프가 포함되며 전체 이미지 지연에는 이미�
 이 결과는 정규 Gradle 테스트 성공이나 선언 의존성 전체 빌드 검증을 뜻하지 않습니다.
 실측 정확도·지연·429 빈도는 아직 없습니다. M0 완료 조건은 미충족입니다.
 
-자세한 설명은 [학습 노트](../../docs/study/05-extraction-lab.md), 판단은 [ADR 003](../../docs/adr/003-extraction-approach.md)을 참고합니다.
+설계 판단은 [ADR 003](../../docs/adr/003-extraction-approach.md)을 참고합니다.
