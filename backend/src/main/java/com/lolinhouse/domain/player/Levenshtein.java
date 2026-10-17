@@ -4,7 +4,6 @@ package com.lolinhouse.domain.player;
  * 역할: 두 문자열의 편집 거리(Levenshtein)와 0~1 유사도를 계산한다.
  * 닉네임 OCR 오인식(한 글자 치환)을 흡수하는 매칭의 바탕이다.
  * 글자는 char가 아니라 코드포인트 단위로 센다(보조 평면 한자도 1글자).
- * 설명: docs/study/07-domain-player-stats.md
  */
 public final class Levenshtein {
 

@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 결과창에서 잘라낸 초상화·밴 아이콘을 Data Dragon 공식 아이콘과 비교해 챔피언을 고른다.
  * 픽과 밴은 화면에 그려지는 모양이 달라서 비교 설정(Settings)을 따로 쓴다.
- * 설정값을 정한 근거(샘플 3장 실측): docs/study/05-extraction-lab.md, docs/adr/003-extraction-approach.md
+ * 설정값을 정한 근거(샘플 3장 실측): docs/adr/003-extraction-approach.md
  */
 public final class IconMatcher {
     /** 비교할 때 양쪽 이미지를 줄이는 크기(픽셀). */

@@ -14,7 +14,7 @@ import javax.imageio.ImageIO;
 /**
  * 오프라인 매칭 튜닝. Gemini를 다시 부르지 않고, 지난 `./gradlew run`에서 잘라 둔 out/crops 이미지를
  * 여러 비교 설정으로 공식 아이콘과 맞춰 보고 정답지(samples/ground-truth.json) 기준 정확도를 출력한다.
- * 실행: ./gradlew tune  · 설명: docs/study/05-extraction-lab.md
+ * 실행: ./gradlew tune  ·
  */
 public final class MatchTuner {
 

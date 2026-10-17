@@ -2,7 +2,6 @@ package com.lolinhouse.domain;
 
 /**
  * 세트별 진영. 같은 대결 안에서도 세트마다 번갈아 바뀐다(1세트는 1팀이 블루).
- * 설명: docs/study/06-domain-set-rules.md
  */
 public enum Side {
     BLUE("블루"),

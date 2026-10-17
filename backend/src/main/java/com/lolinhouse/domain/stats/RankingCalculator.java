@@ -12,7 +12,6 @@ import java.util.Map;
  * 역할: 세트 기록 전체에서 전체 랭킹 또는 포지션별 랭킹을 만든다.
  * 정렬: 선택한 키 → 승률 → 참여 세트 수 → KDA(모두 내림차순). 모두 같으면 공동 순위(1,1,3).
  * 최소 표본(minSets) 미달 선수는 목록 맨 뒤에 순위 없이 둔다.
- * 설명: docs/study/07-domain-player-stats.md
  */
 public final class RankingCalculator {
 

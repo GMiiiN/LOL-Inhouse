@@ -5,7 +5,7 @@ import com.google.genai.Client;
 import com.google.genai.types.*;
 import java.util.*;
 
-/** 구조화 출력과 박스만 모델에 요청한다. 관련 노트: docs/study/05-extraction-lab.md */
+/** 구조화 출력과 박스만 모델에 요청한다 */
 public final class GeminiExtractor implements ScoreboardExtractor,AutoCloseable {
     private final Client client;
     private final String model;
@@ -22,7 +22,7 @@ public final class GeminiExtractor implements ScoreboardExtractor,AutoCloseable 
     private static Map<String,Object> array(Object items,int size) {
         return Map.of("type","array","items",items,"minItems",size,"maxItems",size);
     }
-    /** 좌표는 공식 문서의 [ymin,xmin,ymax,xmax], 0~1000이다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 좌표는 공식 문서의 [ymin,xmin,ymax,xmax], 0~1000이다 */
     public static Map<String,Object> schema() {
         var box=array(Map.of("type","integer","minimum",0,"maximum",1000),4);
         var row=object(Map.of("nickname",Map.of("type","string"),"kills",integer(),"deaths",integer(),
@@ -32,7 +32,7 @@ public final class GeminiExtractor implements ScoreboardExtractor,AutoCloseable 
         return object(Map.of("result",Map.of("type","string","enum",List.of("승리","패배")),
                 "date",Map.of("type","string"),"duration",Map.of("type","string"),"top",team,"bottom",team));
     }
-    /** 정답값을 프롬프트에 넣지 않는다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 정답값을 프롬프트에 넣지 않는다 */
     @Override public JsonNode extract(byte[] png) throws Exception {
         String prompt="""
                 롤 사용자 설정 게임의 결과창이다. 화면에 보이는 값만 읽고 JSON으로 반환하라.
@@ -59,7 +59,7 @@ public final class GeminiExtractor implements ScoreboardExtractor,AutoCloseable 
         validate(data);
         return data;
     }
-    /** 잘못된 응답을 정상 초안으로 취급하지 않는다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 잘못된 응답을 정상 초안으로 취급하지 않는다 */
     public static void validate(JsonNode data) {
         if(!List.of("승리","패배").contains(data.path("result").asText())
                 || !isRealDate(data.path("date").asText())
@@ -108,6 +108,6 @@ public final class GeminiExtractor implements ScoreboardExtractor,AutoCloseable 
         }
         Boxes.pixels(values,1000,1000);
     }
-    /** SDK 연결을 닫는다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** SDK 연결을 닫는다 */
     @Override public void close() { client.close(); }
 }

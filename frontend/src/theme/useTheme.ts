@@ -1,4 +1,4 @@
-// 현재 테마를 React 상태로 들고, 바뀔 때 <html data-theme>와 localStorage를 갱신한다. 노트: docs/study/03-frontend-skeleton.md
+// 현재 테마를 React 상태로 들고, 바뀔 때 <html data-theme>와 localStorage를 갱신한다
 import { useState } from 'react'
 import { applyTheme, readAppliedTheme, saveTheme, type Theme } from './theme'
 

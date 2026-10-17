@@ -8,7 +8,7 @@ import java.util.Set;
 
 /**
  * 대결 안의 1팀/2팀 규칙: 세트별 기대 진영, 위쪽 팀이 1팀인지 판별, 업로드 화면 기본 진영, 진영 불일치 경고.
- * 설명: docs/study/06-domain-set-rules.md (유저플로우 §1, §5.1)
+ * 근거: 유저플로우 §1, §5.1
  */
 public final class DuelTeamRules {
 
@@ -49,14 +49,14 @@ public final class DuelTeamRules {
 
     /**
      * 업로드 화면의 진영 기본값. "캡처한 사람의 팀 = 직전 세트의 위쪽 팀"이라고 가정한다.
-     * 첫 세트는 기본값이 없다(previousTopTeam은 null이어도 된다).
+     * 첫 세트는 기본값이 없다. 직전 세트의 위쪽 팀을 모르면(수동 입력 세트라 top_team이 NULL) 역시 기본값 없이 담당자가 고른다.
      */
     public static Optional<Side> defaultTopSide(int setNo, DuelTeam previousTopTeam) {
         if (setNo == 1) {
             return Optional.empty();
         }
         if (previousTopTeam == null) {
-            throw new IllegalArgumentException("2세트부터는 직전 세트의 위쪽 팀이 필요합니다.");
+            return Optional.empty();
         }
         return Optional.of(expectedSide(previousTopTeam, setNo));
     }

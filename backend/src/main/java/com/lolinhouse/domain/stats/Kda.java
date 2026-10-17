@@ -3,7 +3,6 @@ package com.lolinhouse.domain.stats;
 /**
  * 역할: 누적 K/D/A 합계. 비율은 총(K+A) ÷ 총D로 계산하고, 데스가 0이면 PERFECT(숫자 아님)로 다룬다.
  * 판마다의 KDA를 평균 내지 않기 위해 합계만 들고 있다. 합계가 int를 넘어도 깨지지 않도록 long을 쓴다.
- * 설명: docs/study/07-domain-player-stats.md
  */
 public record Kda(long kills, long deaths, long assists) {
 

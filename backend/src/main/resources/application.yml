@@ -1,4 +1,4 @@
-# 설정 전체 설명: docs/study/02-backend-skeleton.md
+# 설정 전체
 spring:
   application:
     name: backend
@@ -10,6 +10,11 @@ spring:
     url: ${DB_URL:jdbc:mysql://localhost:3307/lol_inhouse}
     username: ${MYSQL_USER:lol_app}
     password: ${MYSQL_PASSWORD:}
+    hikari:
+      # 드라이버와 세션 시간대를 UTC로 맞춘다(URL 출처와 무관하게 적용). DATETIME(6)은 UTC로만 읽고 쓴다. 설명: ADR 005
+      data-source-properties:
+        connectionTimeZone: UTC
+        forceConnectionTimeZoneToSession: true
   jpa:
     open-in-view: false
     hibernate:
@@ -17,7 +22,7 @@ spring:
     properties:
       hibernate:
         jdbc:
-          time_zone: Asia/Seoul
+          time_zone: UTC
   flyway:
     enabled: true
   jackson:
@@ -25,6 +30,22 @@ spring:
 
 server:
   shutdown: graceful
+  servlet:
+    session:
+      # 담당자 로그인 세션 유지 시간(마지막 요청 기준). 설명: docs/design/m3-design.md §4
+      timeout: 2h
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        same-site: lax
+        # 운영(HTTPS)에서만 true. 로컬 http에서는 false여야 쿠키가 저장된다.
+        secure: ${COOKIE_SECURE:false}
+
+# 담당자 계정 초기값. DB에 계정이 없을 때만 한 번 읽어 만든다(비어 있으면 기동 실패 규칙은 auth 패키지).
+app:
+  admin:
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
 
 management:
   endpoints:

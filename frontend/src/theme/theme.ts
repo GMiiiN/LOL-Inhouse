@@ -1,4 +1,4 @@
-// 테마 저장·적용 함수. 노트: docs/study/03-frontend-skeleton.md
+// 테마 저장·적용 함수
 export type Theme = 'dark' | 'light'
 
 const STORAGE_KEY = 'theme'

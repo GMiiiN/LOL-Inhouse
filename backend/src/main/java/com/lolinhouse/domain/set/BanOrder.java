@@ -7,7 +7,6 @@ import java.util.List;
 /**
  * 팀별 밴(화면 순서)을 드래프트 순서 B1 R1 B2 R2 B3 R3 B4 R4 B5 R5 로 바꾼다.
  * 밴은 세트마다 반드시 10개라서 비거나 모자라면 예외다.
- * 설명: docs/study/06-domain-set-rules.md
  */
 public final class BanOrder {
 

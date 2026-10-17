@@ -4,14 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.text.Normalizer;
 import java.util.*;
 
-/** 정답지를 추출기와 분리해 평가한다. 관련 노트: docs/study/05-extraction-lab.md */
+/** 정답지를 추출기와 분리해 평가한다 */
 public final class Comparison {
-    /** 누락도 분모에 포함한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 누락도 분모에 포함한다 */
     public record Metric(int correct,int total) {
         public double percent() { return total==0?0:100.0*correct/total; }
     }
     private final Map<String,Metric> counts=new LinkedHashMap<>();
-    /** 필드별 측정값을 반환한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 필드별 측정값을 반환한다 */
     public Map<String,Metric> metrics() { return Collections.unmodifiableMap(counts); }
     private void add(String name,boolean correct) {
         var old=counts.getOrDefault(name,new Metric(0,0));
@@ -24,7 +24,7 @@ public final class Comparison {
     private static String normalized(String value) {
         return Normalizer.normalize(value,Normalizer.Form.NFKC).replaceAll("\\s+","").replaceAll("(…|\\.\\.\\.)$","");
     }
-    /** 말줄임일 때만 최소 70% 접두부 일치를 허용한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 말줄임일 때만 최소 70% 접두부 일치를 허용한다 */
     public static boolean prefix(String actual,String expected) {
         String a=normalized(actual),e=normalized(expected);
         if(a.equals(e)) return true;
@@ -32,7 +32,7 @@ public final class Comparison {
         return truncated && !a.isEmpty() && e.startsWith(a)
                 && a.codePointCount(0,a.length())>=0.7*e.codePointCount(0,e.length());
     }
-    /** 한 행을 화면 순서로 비교한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 한 행을 화면 순서로 비교한다 */
     public void row(JsonNode expected,JsonNode actual) {
         equal("닉네임 정확",expected.path("nick"),actual.path("nickname"));
         if(expected.path("nick").isTextual())
@@ -48,7 +48,7 @@ public final class Comparison {
         equal("CS",expected.path("cs"),actual.path("cs"));
         equal("골드",expected.path("gold"),actual.path("gold"));
     }
-    /** 실패한 이미지도 모든 정답 필드의 분모에 포함한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 실패한 이미지도 모든 정답 필드의 분모에 포함한다 */
     public void sample(JsonNode expected,JsonNode actual) {
         equal("상단 승패",expected.path("result"),actual.path("result"));
         equal("날짜",expected.path("date"),actual.path("date"));
@@ -61,7 +61,7 @@ public final class Comparison {
             for(int i=0;i<e.path("rows").size();i++) row(e.path("rows").path(i),a.path("rows").path(i));
         }
     }
-    /** 팀 합계와 행 합계가 다르거나 누락되면 경고한다. 관련 노트: docs/study/05-extraction-lab.md */
+    /** 팀 합계와 행 합계가 다르거나 누락되면 경고한다 */
     public static List<String> teamWarnings(JsonNode team,String side) {
         var warnings=new ArrayList<String>();
         for(String field:List.of("kills","deaths","assists")) {

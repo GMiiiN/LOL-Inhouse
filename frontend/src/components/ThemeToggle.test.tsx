@@ -1,4 +1,4 @@
-// 테마 토글 테스트: data-theme 전환과 localStorage 저장. 노트: docs/study/03-frontend-skeleton.md
+// 테마 토글 테스트: data-theme 전환과 localStorage 저장
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'

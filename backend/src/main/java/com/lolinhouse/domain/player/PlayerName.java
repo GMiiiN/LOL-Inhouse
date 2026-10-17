@@ -3,7 +3,6 @@ package com.lolinhouse.domain.player;
 /**
  * 역할: 선수의 표시 이름 규칙. 미등록이면 게임 닉네임, 등록하면 실명을 보여준다.
  * 선수 ID는 그대로라 등록해도 전적이 갈라지지 않는다(저장은 M3).
- * 설명: docs/study/07-domain-player-stats.md
  */
 public record PlayerName(String gameNickname, String realName) {
 

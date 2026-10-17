@@ -14,5 +14,5 @@
 - **4.0.x**: 4.1보다 먼저 나와 지원 종료도 먼저 온다.
 
 ## 결과
-- 강의(Boot 3)와 차이가 생긴다. 핵심 개념(DI, MVC, JPA, Security 필터 체인)은 같고, 의존성 이름·일부 설정 키·라이브러리 세대(예: Jackson)가 다를 수 있다. 실제로 마주친 차이는 `docs/study/02-backend-skeleton.md`에 기록한다.
+- 강의(Boot 3)와 차이가 생긴다. 핵심 개념(DI, MVC, JPA, Security 필터 체인)은 같고, 의존성 이름·일부 설정 키·라이브러리 세대(예: Jackson)가 다를 수 있다. 실제로 마주친 차이는 관련 코드 주석과 ADR에 남긴다.
 - 의존 라이브러리(Testcontainers, AWS SDK, Google Gen AI SDK)는 Boot 버전과 독립적이라 영향이 작다.

@@ -28,5 +28,8 @@ dist/
 .DS_Store
 Thumbs.db
 
+# 학습 노트: 개인 공부용이라 저장소(포트폴리오)에 올리지 않는다. 로컬에만 둔다.
+docs/study/
+
 # Claude Code 개인 설정
 .claude/settings.local.json

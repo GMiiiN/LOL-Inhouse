@@ -1,5 +1,5 @@
 # 로컬 개발용 MySQL. 실행: docker compose -f infra/docker-compose.yml --env-file .env up -d
-# 값(DB 이름·계정·비밀번호)은 루트 .env에서 읽는다. 설명: docs/study/01-repository-skeleton.md
+# 값(DB 이름·계정·비밀번호)은 루트 .env에서 읽는다
 name: lol-inhouse
 
 services:
