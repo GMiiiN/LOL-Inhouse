@@ -68,14 +68,23 @@ public class InhouseSessionService {
         return new InhouseSessionDetailResponse(session.id(), session.startDate(), duels);
     }
 
-    @Transactional
     public DuelResponse createDuel(Long sessionId) {
+        return createDuel(sessionId, FearlessMode.RESET);
+    }
+
+    /** 묶음의 첫 대결은 항상 RESET이라 이어가기(CONTINUE) 요청은 400 FEARLESS_CONTINUE_WITHOUT_PREVIOUS. */
+    @Transactional
+    public DuelResponse createDuel(Long sessionId, FearlessMode fearlessMode) {
         if (!sessionRepository.existsById(sessionId)) {
             throw sessionNotFound(sessionId);
         }
         int nextSeq = duelRepository.findMaxSeq(sessionId) + 1;
+        if (fearlessMode == FearlessMode.CONTINUE && nextSeq == 1) {
+            throw ApiException.badRequest("FEARLESS_CONTINUE_WITHOUT_PREVIOUS",
+                    "묶음의 첫 대결은 이어갈 이전 대결이 없어 초기화(RESET)로만 만들 수 있습니다.");
+        }
         try {
-            return DuelResponse.from(duelRepository.saveAndFlush(Duel.of(sessionId, nextSeq)));
+            return DuelResponse.from(duelRepository.saveAndFlush(Duel.of(sessionId, nextSeq, fearlessMode)));
         } catch (DataIntegrityViolationException e) {
             // 동시에 같은 번호를 계산한 다른 요청이 먼저 저장됨 → DB UNIQUE (session_id, seq)가 막았다.
             throw ApiException.conflict("DUEL_SEQ_CONFLICT", "다른 요청이 같은 번호의 대결을 먼저 만들었습니다. 다시 시도하세요.");

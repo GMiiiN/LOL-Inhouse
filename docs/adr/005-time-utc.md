@@ -1,7 +1,7 @@
 # ADR 005. 시각은 UTC로 저장하고, 날짜는 변환 없이 저장한다
 
 - 상태: 확정 (M3, 2026-10-16)
-- 관련: `docs/design/m3-design.md` §2·§9-7, 학습 노트 [08](../study/08-persistence-schema.md), `application.yml`, `V2__core_schema.sql`
+- 관련: `docs/design/m3-design.md` §2·§9-7, `application.yml`, `V2__core_schema.sql`
 - 바뀐 점: M1에서 `hibernate.jdbc.time_zone: Asia/Seoul`이었던 것을 UTC로 바꾼다.
 
 ## 배경

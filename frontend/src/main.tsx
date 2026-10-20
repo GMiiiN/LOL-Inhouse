@@ -9,6 +9,7 @@ import { routes } from './routes'
 import './styles/theme.css'
 import './styles/global.css'
 import './styles/admin.css'
+import './styles/register.css'
 import { applyTheme, readStoredTheme } from './theme/theme'
 
 // 첫 렌더 전에 적용해야 라이트 테마 사용자가 다크 화면을 잠깐 보지 않는다.

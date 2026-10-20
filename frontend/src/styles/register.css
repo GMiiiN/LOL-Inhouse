@@ -1,0 +1,513 @@
+/* 세트 등록·확인 화면 스타일. 색은 theme.css 토큰만 쓴다(다크/라이트 공통). 모바일은 지원하지 않는다. */
+.choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 14px;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sunk);
+}
+
+.choice-group legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.choice-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+input[type='radio'] {
+  appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 2px solid var(--faint);
+  border-radius: 50%;
+  background: var(--sunk);
+  cursor: pointer;
+}
+
+input[type='radio']:checked {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 0 45%, transparent 50%), var(--sunk);
+}
+
+.choice-group label {
+  border: 1px solid var(--line2);
+}
+
+.choice-group label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border: 1px solid var(--line2);
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.badge-ok {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge-auto {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+
+.badge-warn {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.badge-new {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge-error {
+  color: var(--err);
+  border-color: var(--err);
+  background: var(--err-bg);
+}
+
+.warn-notice,
+.notice {
+  margin: 8px 0;
+  padding: 11px 16px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.warn-notice {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.notice.strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-color: var(--accent-line);
+  background: linear-gradient(90deg, var(--accent-soft), var(--panel) 70%);
+}
+
+.notice b {
+  color: var(--ink);
+}
+
+.warn-notice p,
+.notice p {
+  margin: 0;
+}
+
+.warn-notice ul,
+.notice ul {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+
+.warn-notice button,
+.notice button {
+  margin-top: 8px;
+}
+
+.register-head h2 {
+  margin-bottom: 4px;
+}
+
+.registered-sets {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.restricted-list summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+/* 업로드 */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 150px;
+  margin: 12px 0;
+  padding: 20px;
+  border: 2px dashed var(--line2);
+  border-radius: 14px;
+  background: var(--sunk);
+  text-align: center;
+}
+
+.drop-zone p {
+  margin: 0;
+}
+
+.file-button input {
+  display: none;
+}
+
+.upload-preview img {
+  max-width: min(100%, 420px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+/* 확인 화면 */
+.review-step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.info-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.info-grid input,
+.info-grid select,
+.number-field input,
+.player-picker input[type='text'],
+.player-picker input[type='search'],
+.champion-search input,
+.row-lane select {
+  padding: 6px 8px;
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+  min-width: 0;
+}
+
+.match-info-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.match-info-head h2 {
+  margin: 0;
+}
+
+.detection {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.source-thumb {
+  margin-top: 12px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: none;
+  cursor: zoom-in;
+}
+
+.source-thumb img {
+  display: block;
+  max-width: 260px;
+  border-radius: 9px;
+}
+
+.source-thumb.zoomed {
+  cursor: zoom-out;
+}
+
+.source-thumb.zoomed img {
+  max-width: 100%;
+}
+
+.team-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.number-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.number-field {
+  white-space: nowrap;
+}
+
+.number-field input {
+  width: 84px;
+  font-family: var(--f-num);
+}
+
+.review-row {
+  display: grid;
+  grid-template-columns: 110px minmax(230px, 1.1fr) minmax(280px, 1.4fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sunk);
+}
+
+.review-row.has-issue {
+  border-color: var(--warn);
+}
+
+.row-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row-no {
+  color: var(--faint);
+  font-family: var(--f-num);
+  font-size: 11px;
+}
+
+.row-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  max-width: 330px;
+}
+
+.player-picker,
+.champion-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.player-read code {
+  font-family: var(--f-num);
+  color: var(--ink);
+}
+
+.candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.nickname-input,
+.alias-check {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.alias-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.slot-issue {
+  color: var(--warn);
+  font-size: 12px;
+}
+
+.champion-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.champion-main {
+  min-width: 0;
+}
+
+.champion-current {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.champion-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge-block {
+  align-self: flex-start;
+  margin-left: 0;
+  white-space: nowrap;
+}
+
+.champion-picker.uncertain .champion-main {
+  padding: 2px 6px;
+  border-radius: 9px;
+  box-shadow: 0 0 0 2px var(--warn);
+}
+
+.champion-picker.has-issue .champion-current {
+  color: var(--warn);
+}
+
+.icon-crop {
+  display: inline-block;
+  flex: none;
+  border: 1px solid var(--line2);
+  border-radius: 7px;
+  background-color: var(--panel);
+  background-repeat: no-repeat;
+}
+
+.champion-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: none;
+}
+
+.champion-icon-empty {
+  display: inline-block;
+  border: 1px dashed var(--line2);
+  background: var(--panel);
+}
+
+.crop-failed {
+  color: var(--err);
+  font-size: 12px;
+}
+
+.champion-chips,
+.search-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.champion-picker .chip,
+.player-picker .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 4px;
+  border: 1px solid var(--line2);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.champion-picker .chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip.restricted {
+  opacity: 0.45;
+}
+
+.chip.restricted small {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.ban-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ban-slot {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sunk);
+}
+
+.ban-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--accent);
+  font-family: var(--f-num);
+}
+
+.new-duel-chooser h2 {
+  margin-bottom: 6px;
+}
+
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  background: linear-gradient(180deg, transparent, var(--bg) 40%);
+}
+
+.extraction-progress strong {
+  font-family: var(--f-num);
+}
+
+.saved-step h2 {
+  color: var(--accent);
+}

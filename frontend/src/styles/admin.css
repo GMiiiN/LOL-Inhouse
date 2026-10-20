@@ -40,9 +40,9 @@
 .inline-form input,
 .inline-form select {
   padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  background: var(--sunk);
   color: var(--ink);
   font: inherit;
 }
@@ -54,13 +54,15 @@
 }
 
 .primary-button {
-  padding: 8px 14px;
+  padding: 8px 15px;
   border: 0;
-  border-radius: 6px;
-  background: var(--btn);
-  color: #fff;
+  border-radius: 9px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--btn) 85%, #fff), var(--btn));
+  color: var(--accent-ink);
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--btn) 20%, transparent);
 }
 
 .primary-button:disabled,
@@ -87,7 +89,7 @@
 .error-notice {
   margin: 8px 0;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--err-bg);
   color: var(--err);
   font-size: 13px;
@@ -108,10 +110,11 @@
 
 .panel {
   margin-bottom: 20px;
-  padding: 16px;
+  padding: 20px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--panel2), var(--panel) 120px);
+  box-shadow: var(--shadow);
 }
 
 .page-title-row {
@@ -151,7 +154,7 @@
 .player-card {
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 14px;
   background: var(--panel);
 }
 
@@ -250,6 +253,6 @@
   align-items: center;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--panel);
 }

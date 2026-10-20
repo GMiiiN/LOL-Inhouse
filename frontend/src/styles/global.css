@@ -5,10 +5,31 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(1100px 420px at 50% -120px, var(--glow), transparent 75%) no-repeat, var(--bg);
   color: var(--ink);
-  font-family: 'IBM Plex Sans KR', system-ui, sans-serif;
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.55;
+  min-height: 100vh;
   font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 a {
@@ -48,8 +69,9 @@ a {
 }
 
 .app-nav a.active {
-  background: var(--chip);
-  color: var(--ink);
+  background: var(--panel2);
+  box-shadow: inset 0 0 0 1px var(--line2);
+  color: var(--accent);
 }
 
 .header-actions {
@@ -62,9 +84,9 @@ a {
 
 .header-button {
   padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-radius: 9px;
+  background: var(--panel2);
   color: var(--ink);
   font: inherit;
   font-size: 13px;

@@ -18,11 +18,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
  * 역할: 컨트롤러 단계의 모든 예외를 application/problem+json(ProblemDetail + code)으로 바꾼다.
- * 400 VALIDATION_FAILED(+errors), 400 MALFORMED_REQUEST, ApiException(상태·code 그대로), 500 INTERNAL_ERROR(내부 메시지 숨김).
+ * 400 VALIDATION_FAILED(+errors), 400 MALFORMED_REQUEST, 400 IMAGE_REQUIRED, 413 IMAGE_TOO_LARGE, ApiException(상태·code 그대로),
+ * 500 INTERNAL_ERROR(내부 메시지 숨김, 로그에도 메시지 없음).
  * 프레임워크가 던지는 나머지 표준 예외(404·405·415 등)는 부모 클래스가 처리하고, code가 없으면 상태 이름을 code로 채운다.
  * 필터 단계(401·CSRF 403)는 MVC 밖이라 여기가 아니라 AuthJsonResponder가 맡는다.
  */
@@ -52,6 +55,25 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, problem, headers, HttpStatus.BAD_REQUEST, request);
     }
 
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemResponses.of(HttpStatus.CONTENT_TOO_LARGE, "IMAGE_TOO_LARGE",
+                "이미지는 10MB 이하여야 합니다.");
+        return handleExceptionInternal(ex, problem, headers, HttpStatus.CONTENT_TOO_LARGE, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestPart(MissingServletRequestPartException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (!"image".equals(ex.getRequestPartName())) {
+            return super.handleMissingServletRequestPart(ex, headers, status, request);
+        }
+        ProblemDetail problem = ProblemResponses.of(HttpStatus.BAD_REQUEST, "IMAGE_REQUIRED",
+                "결과창 이미지를 함께 보내야 합니다.");
+        return handleExceptionInternal(ex, problem, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
     @ExceptionHandler(ApiException.class)
     ResponseEntity<Object> handleApiException(ApiException ex, WebRequest request) {
         ProblemDetail problem = ProblemResponses.of(ex.status(), ex.code(), ex.getMessage());
@@ -77,7 +99,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (ex instanceof AccessDeniedException || ex instanceof AuthenticationException) {
             throw ex;
         }
-        log.error("처리되지 않은 예외", ex);
+        // 예외 메시지·원인 메시지에는 닉네임·SQL 값이 섞일 수 있어 클래스·제약 이름·스택 프레임만 남긴다(SafeLog).
+        log.error("처리되지 않은 예외: {}", SafeLog.describe(ex));
         ProblemDetail problem = ProblemResponses.of(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
                 "서버 내부 오류가 발생했습니다.");
         return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);

@@ -14,6 +14,7 @@ import com.lolinhouse.player.Player;
 import com.lolinhouse.player.PlayerRepository;
 import com.lolinhouse.session.Duel;
 import com.lolinhouse.session.DuelRepository;
+import com.lolinhouse.session.FearlessMode;
 import com.lolinhouse.session.GameSet;
 import com.lolinhouse.session.GameSet.DisplayedTotals;
 import com.lolinhouse.session.GameSetRepository;
@@ -132,7 +133,7 @@ class TimeZoneRoundTripTest {
     @Test
     void entityTimestampsHaveNoSubMicrosecondPrecision() {
         Player saved = players.save(Player.unregistered("micros"));
-        GameSet set = GameSet.create(duels.save(Duel.of(sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15))).id(), 1)).id(),
+        GameSet set = GameSet.create(duels.save(Duel.of(sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15))).id(), 1, FearlessMode.RESET)).id(),
                 1, Side.BLUE, DuelTeam.TEAM1, null, LocalDate.of(2026, 10, 15), 100, new DisplayedTotals(1, 1, 1, 1),
                 new DisplayedTotals(2, 2, 2, 2), null, null);
         set.markDeleted();
@@ -193,7 +194,7 @@ class TimeZoneRoundTripTest {
 
     @Test
     void softDeleteTimestampIsStoredAsUtcAndReadsBackEqual() {
-        Duel duel = duels.save(Duel.of(sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15))).id(), 1));
+        Duel duel = duels.save(Duel.of(sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15))).id(), 1, FearlessMode.RESET));
         GameSet set = GameSet.create(duel.id(), 1, Side.BLUE, DuelTeam.TEAM1, null, LocalDate.of(2026, 10, 15), 100,
                 new DisplayedTotals(1, 1, 1, 1), new DisplayedTotals(2, 2, 2, 2), null, null);
         set.markDeleted();
@@ -236,7 +237,7 @@ class TimeZoneRoundTripTest {
 
     @Test
     void gameSetShotDateRoundTripsWithoutShift() {
-        Duel duel = duels.save(Duel.of(sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15))).id(), 1));
+        Duel duel = duels.save(Duel.of(sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15))).id(), 1, FearlessMode.RESET));
         GameSet set = GameSet.create(duel.id(), 1, Side.BLUE, DuelTeam.TEAM1, null, LocalDate.of(2026, 10, 15), 100,
                 new DisplayedTotals(1, 1, 1, 1), new DisplayedTotals(2, 2, 2, 2), null, null);
         Long id = gameSets.save(set).id();

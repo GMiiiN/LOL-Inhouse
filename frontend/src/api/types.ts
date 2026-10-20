@@ -1,3 +1,5 @@
+import type { FearlessMode, RegistrationProblemExtras } from './registrationTypes'
+
 // 백엔드 API 응답·요청 형태를 한곳에 모은 파일. 백엔드(M3 설계 §5)가 확정되면 여기만 맞춘다.
 // 아래 필드 이름은 설계 문서의 설명을 바탕으로 한 "가정"이다. 실제 DTO와 다르면 이 파일부터 고친다.
 
@@ -29,7 +31,7 @@ export type ProblemBody = {
   errors?: FieldError[]
   conflicts?: AliasConflict[]
   existingSessionId?: number // SESSION_DATE_CONFLICT 때만
-}
+} & RegistrationProblemExtras // M4 세트 등록 오류의 확장 필드
 
 // ---- 인증 ----
 export type AdminMe = { username: string }
@@ -70,6 +72,7 @@ export type InhouseSessionSummary = {
 export type DuelSummary = {
   id: number
   seq: number // 묶음 안 "대결 N"
+  fearlessMode?: FearlessMode // M4: 피어리스 방식. 서버가 내려주기 전까지는 없을 수 있음
 }
 
 export type InhouseSessionDetail = {

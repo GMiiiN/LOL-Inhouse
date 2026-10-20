@@ -9,9 +9,14 @@ tools/extraction-lab/samples/
 tools/extraction-lab/out/
 tools/extraction-lab/cache/
 
+# 업로드 결과창 이미지·Data Dragon 캐시(M4): 친구 닉네임이 담긴 이미지가 있어 올리지 않는다
+/data/
+
 # Java / Gradle
 .gradle/
 build/
+# 작업자별 병렬 빌드 출력(-PbuildDirName=build-a 처럼 build- 로 시작하는 이름을 쓴다)
+build-*/
 !gradle/wrapper/gradle-wrapper.jar
 *.class
 out/

@@ -3,7 +3,8 @@ import { ApiError } from './client'
 
 export const LOGIN_FAILED_MESSAGE = '아이디 또는 비밀번호가 맞지 않습니다.'
 
-const MESSAGES: Record<string, string> = {
+// 값이 함수인 항목은 오류에 실린 확장 필드(existingSetNo 등)로 문구를 만든다.
+const MESSAGES: Record<string, string | ((error: ApiError) => string)> = {
   LOGIN_FAILED: LOGIN_FAILED_MESSAGE,
   UNAUTHORIZED: '로그인이 필요합니다.',
   CSRF_INVALID: '보안 토큰이 만료되었습니다. 잠시 뒤 다시 시도해 주세요.',
@@ -17,6 +18,55 @@ const MESSAGES: Record<string, string> = {
   REAL_NAME_CANNOT_BE_CLEARED: '등록된 선수의 실명은 비울 수 없습니다.',
   SESSION_DATE_CONFLICT: '같은 시작일의 내전 묶음이 이미 있습니다.',
   DUEL_SEQ_CONFLICT: '다른 곳에서 동시에 대결이 만들어졌습니다. 목록을 새로 고친 뒤 다시 시도해 주세요.',
+  FEARLESS_CONTINUE_WITHOUT_PREVIOUS: '내전 묶음의 첫 대결은 이어갈 이전 대결이 없어 초기화로만 만들 수 있습니다.',
+  CONCURRENT_REQUEST_CONFLICT: '같은 시각에 다른 요청과 충돌했습니다. 잠시 뒤 다시 시도해 주세요.',
+
+  // ---- M4 세트 등록 요청 오류 ----
+  DUPLICATE_IMAGE: (e) =>
+    e.existingSetNo !== undefined
+      ? `이미 ${e.existingSetNo}세트로 등록된 결과창입니다.`
+      : '이미 세트로 등록된 결과창입니다.',
+  IMAGE_REQUIRED: '결과창 이미지를 붙여 넣거나 선택해 주세요.',
+  UNSUPPORTED_IMAGE: 'PNG 또는 JPEG 이미지만 올릴 수 있습니다.',
+  IMAGE_DIMENSIONS_EXCEEDED: '이미지 크기가 너무 큽니다(최대 4096x4096).',
+  IMAGE_TOO_LARGE: '이미지가 너무 큽니다(최대 10MB).',
+  EXTRACTION_BUSY: '다른 추출이 진행 중이라 대기열이 가득 찼습니다. 잠시 뒤 다시 시도해 주세요.',
+  EXTRACTION_NOT_CONFIGURED: 'AI 추출이 설정되어 있지 않습니다(Gemini API 키 없음). 서버 설정을 확인해 주세요.',
+  CHAMPION_CATALOG_UNAVAILABLE: '챔피언 목록을 불러올 수 없습니다. 잠시 뒤 다시 시도해 주세요.',
+  EXTRACTION_NOT_FOUND: '추출 작업을 찾을 수 없습니다.',
+  EXTRACTION_NOT_READY: '아직 추출이 끝나지 않았습니다.',
+  EXTRACTION_DUEL_MISMATCH: '이 대결의 추출 작업이 아닙니다.',
+  EXTRACTION_ALREADY_SAVED: '이 추출 결과는 이미 세트로 저장되었습니다.',
+  SET_RULES_VIOLATED: '세트 규칙을 지키지 않은 항목이 있어 저장하지 못했습니다.',
+  DUPLICATE_SET: (e) =>
+    e.existingSetNo !== undefined
+      ? `이미 ${e.existingSetNo}세트로 등록된 같은 경기입니다.`
+      : '이미 등록된 같은 경기입니다(날짜·경기 시간·킬·골드가 같음).',
+  SET_NO_CONFLICT:
+    '다른 곳에서 세트가 먼저 등록되어 세트 번호가 바뀌었습니다. 등록 현황을 새로 불러왔으니 확인한 뒤 다시 저장해 주세요.',
+  PLAYER_NOT_FOUND: '선택한 선수를 찾을 수 없습니다. 선수를 다시 골라 주세요.',
+  DUEL_NOT_FOUND: '대결을 찾을 수 없습니다.',
+}
+
+// 추출 작업이 FAILED가 된 이유(작업 상태의 errorCode). 요청 오류와 달리 HTTP 오류가 아니라 작업 상태 값이다.
+const EXTRACTION_FAILURE_MESSAGES: Record<string, string> = {
+  EXTRACTION_RATE_LIMITED: 'AI 추출 요청 한도에 걸렸습니다. 잠시 기다렸다가 다시 추출해 주세요.',
+  EXTRACTION_UPSTREAM_UNAVAILABLE: 'AI 서버가 응답하지 않습니다. 잠시 뒤 다시 추출해 주세요.',
+  EXTRACTION_REJECTED: 'AI 서버가 요청을 거절했습니다. 서버 설정(API 키)을 확인해 주세요.',
+  EXTRACTION_TIMEOUT: '추출이 제한 시간 안에 끝나지 않았습니다. 다시 추출해 주세요.',
+  EXTRACTION_INVALID_RESPONSE: 'AI가 결과창을 제대로 읽지 못했습니다. 이미지를 확인하고 다시 추출해 주세요.',
+  EXTRACTION_NOT_CONFIGURED: 'AI 추출이 설정되어 있지 않습니다(Gemini API 키 없음).',
+  IMAGE_UNREADABLE: '저장된 이미지를 읽을 수 없습니다. 이미지를 다시 붙여 넣어 주세요.',
+  CHAMPION_CATALOG_UNAVAILABLE: '챔피언 목록을 불러오지 못해 추출하지 못했습니다. 잠시 뒤 다시 추출해 주세요.',
+  BUSY: '다른 추출이 진행 중이라 대기열이 가득 찼습니다. 잠시 뒤 다시 추출해 주세요.',
+  INTERRUPTED: '서버가 재시작되어 추출이 중단되었습니다. 다시 추출해 주세요.',
+  INTERNAL_ERROR: '추출 중 서버에 문제가 생겼습니다. 다시 추출해 주세요.',
+  EXPIRED: '추출이 시작되지 못한 채 시간이 지났습니다. 다시 추출해 주세요.',
+  SUPERSEDED: '같은 이미지로 새 추출이 시작되어 이 작업은 닫혔습니다.',
+}
+
+export function describeExtractionFailure(errorCode: string | null | undefined): string {
+  return (errorCode && EXTRACTION_FAILURE_MESSAGES[errorCode]) || '추출에 실패했습니다. 다시 추출해 주세요.'
 }
 
 export type ErrorView = {
@@ -29,7 +79,8 @@ export function describeError(error: unknown): ErrorView {
   if (!(error instanceof ApiError)) {
     return { message: '알 수 없는 오류가 발생했습니다.', fieldErrors: [], conflicts: [] }
   }
-  let message = MESSAGES[error.code]
+  const entry = MESSAGES[error.code]
+  let message = typeof entry === 'function' ? entry(error) : entry
   if (!message && error.status === 404) message = '대상을 찾을 수 없습니다.'
   if (!message && error.status >= 500) message = '서버에 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요.'
   return {

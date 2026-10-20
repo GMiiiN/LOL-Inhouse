@@ -34,6 +34,14 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.BAD_REQUEST, code, detail);
     }
 
+    public static ApiException payloadTooLarge(String code, String detail) {
+        return new ApiException(HttpStatus.CONTENT_TOO_LARGE, code, detail);
+    }
+
+    public static ApiException serviceUnavailable(String code, String detail) {
+        return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, code, detail);
+    }
+
     /** 응답 JSON 최상위에 붙일 속성을 추가한다(체이닝). */
     public ApiException with(String name, Object value) {
         properties.put(name, value);

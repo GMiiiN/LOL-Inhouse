@@ -42,8 +42,10 @@ public class InhouseSessionController {
     }
 
     @PostMapping("/inhouse-sessions/{sessionId}/duels")
-    ResponseEntity<DuelResponse> createDuel(@PathVariable Long sessionId) {
-        DuelResponse created = sessionService.createDuel(sessionId);
+    ResponseEntity<DuelResponse> createDuel(@PathVariable Long sessionId,
+            @RequestBody(required = false) DuelCreateRequest request) {
+        FearlessMode mode = request == null || request.fearlessMode() == null ? FearlessMode.RESET : request.fearlessMode();
+        DuelResponse created = sessionService.createDuel(sessionId, mode);
         return ResponseEntity.created(URI.create("/api/admin/duels/" + created.id())).body(created);
     }
 

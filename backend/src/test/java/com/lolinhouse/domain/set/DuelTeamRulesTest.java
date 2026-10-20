@@ -123,6 +123,6 @@ class DuelTeamRulesTest {
         Optional<String> warning = DuelTeamRules.sideWarning(DuelTeam.TEAM1, 2, Side.BLUE);
 
         assertThat(warning).isPresent();
-        assertThat(warning.get()).contains("1팀", "2세트", "레드", "블루");
+        assertThat(warning.get()).contains("A팀", "2세트", "레드", "블루");
     }
 }
