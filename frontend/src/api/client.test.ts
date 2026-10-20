@@ -86,6 +86,50 @@ describe('apiRequest', () => {
     })
   })
 
+  it('FormData 본문은 Content-Type을 지정하지 않고(브라우저가 boundary를 붙임) CSRF 헤더와 함께 보낸다', async () => {
+    document.cookie = 'XSRF-TOKEN=token-1; path=/'
+    const { calls } = mockFetch({ 'POST /api/up': () => jsonResponse(202, { jobId: 1 }) })
+    const formData = new FormData()
+    formData.append('topSide', 'BLUE')
+
+    await apiRequest('/api/up', { method: 'POST', formData })
+
+    expect(calls[0].headers.has('Content-Type')).toBe(false)
+    expect(calls[0].headers.get('X-XSRF-TOKEN')).toBe('token-1')
+    expect(calls[0].formData?.get('topSide')).toBe('BLUE')
+  })
+
+  it('M4 확장 오류 필드(violations, warnings, existing*, savedSetId)를 ApiError에 보존한다', async () => {
+    mockFetch({
+      'POST /api/a': () =>
+        problemResponse(422, 'SET_RULES_VIOLATED', { violations: ['밴 부족'], warnings: ['합계 불일치'] }),
+      'POST /api/b': () =>
+        problemResponse(409, 'DUPLICATE_SET', { existingSetId: 7, existingDuelId: 3, existingSetNo: 2 }),
+      'POST /api/c': () => problemResponse(409, 'EXTRACTION_ALREADY_SAVED', { savedSetId: 9 }),
+    })
+
+    await expect(apiRequest('/api/a', { method: 'POST' })).rejects.toMatchObject({
+      violations: ['밴 부족'],
+      warnings: ['합계 불일치'],
+    })
+    await expect(apiRequest('/api/b', { method: 'POST' })).rejects.toMatchObject({
+      existingSetId: 7,
+      existingDuelId: 3,
+      existingSetNo: 2,
+    })
+    await expect(apiRequest('/api/c', { method: 'POST' })).rejects.toMatchObject({ savedSetId: 9 })
+  })
+
+  it('확장 필드가 없으면 빈 목록·undefined다', async () => {
+    mockFetch({ 'POST /api/a': () => problemResponse(400, 'VALIDATION_FAILED') })
+
+    const error = (await apiRequest('/api/a', { method: 'POST' }).catch((e: unknown) => e)) as ApiError
+
+    expect(error.violations).toEqual([])
+    expect(error.warnings).toEqual([])
+    expect(error.existingSetId).toBeUndefined()
+  })
+
   it('204 응답은 undefined를 돌려주고, 본문이 JSON이 아닌 오류도 상태 코드로 표현한다', async () => {
     mockFetch({
       'DELETE /api/a': () => noContent(),

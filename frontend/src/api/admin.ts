@@ -1,5 +1,6 @@
 // 담당자 API 호출 함수 모음 (URL은 M3 설계 §5)
 import { ApiError, apiRequest } from './client'
+import type { FearlessMode } from './registrationTypes'
 import type {
   AdminMe,
   DuelSummary,
@@ -52,6 +53,9 @@ export const getSession = (id: number) =>
 export const createSession = (startDate: string) =>
   apiRequest<InhouseSessionSummary>('/api/admin/inhouse-sessions', { method: 'POST', json: { startDate } })
 
-// 본문 없는 POST. 같은 묶음에 새 대결을 만들며, 이것이 피어리스 초기화 역할을 한다.
-export const createDuel = (sessionId: number) =>
-  apiRequest<DuelSummary>(`/api/admin/inhouse-sessions/${sessionId}/duels`, { method: 'POST' })
+// 같은 묶음에 새 대결을 만든다. fearlessMode: RESET(제한 없이 시작) 또는 CONTINUE(이전 대결에서 이어가기)
+export const createDuel = (sessionId: number, fearlessMode: FearlessMode) =>
+  apiRequest<DuelSummary>(`/api/admin/inhouse-sessions/${sessionId}/duels`, {
+    method: 'POST',
+    json: { fearlessMode },
+  })

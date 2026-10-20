@@ -6,6 +6,7 @@ export type MockRequest = {
   path: string
   headers: Headers
   body: string | null
+  formData: FormData | null // multipart 업로드 본문
 }
 
 export type MockHandler = (request: MockRequest) => Response | Promise<Response> // Promise는 응답 지연 흉내용
@@ -30,6 +31,7 @@ export function mockFetch(routes: Record<string, MockHandler>) {
       path,
       headers: new Headers(init?.headers),
       body: typeof init?.body === 'string' ? init.body : null,
+      formData: init?.body instanceof FormData ? init.body : null,
     }
     calls.push(request)
     const handler = routes[`${method} ${path}`]

@@ -1,4 +1,4 @@
-// 내전 관리 화면 테스트: 목록, 묶음 생성 충돌 안내, 새 대결(본문 없는 POST)
+// 내전 관리 화면 테스트: 목록, 묶음 생성 충돌 안내, 새 대결(피어리스 방식 선택)
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -63,27 +63,46 @@ describe('SessionsPage', () => {
 })
 
 describe('SessionDetailPage', () => {
-  it('새 대결은 본문 없는 POST로 만들고, 대결 목록과 세트 등록 링크를 보여 준다', async () => {
+  it('새 대결은 고른 피어리스 방식(기본 초기화)을 본문에 담아 만들고, 대결 목록에 방식을 표시한다', async () => {
     const user = userEvent.setup()
-    let duels = [{ id: 11, seq: 1 }]
+    let duels: { id: number; seq: number; fearlessMode: string }[] = [{ id: 11, seq: 1, fearlessMode: 'RESET' }]
     const { calls } = mockFetch({
       ...me,
       'GET /api/admin/inhouse-sessions/5': () => jsonResponse(200, { id: 5, startDate: '2026-10-20', duels }),
-      'POST /api/admin/inhouse-sessions/5/duels': () => {
-        duels = [...duels, { id: 12, seq: 2 }]
-        return jsonResponse(201, { id: 12, seq: 2 })
+      'POST /api/admin/inhouse-sessions/5/duels': (request) => {
+        const mode = JSON.parse(request.body ?? '{}').fearlessMode as string
+        duels = [...duels, { id: 12, seq: 2, fearlessMode: mode }]
+        return jsonResponse(201, { id: 12, seq: 2, fearlessMode: mode })
       },
     })
     renderApp('/admin/sessions/5')
 
     expect(await screen.findByText('대결 1')).toBeInTheDocument()
-    expect(screen.getByText(/피어리스 제한 챔피언과 팀 구성이 새로 시작됩니다/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '세트 등록' })).toHaveAttribute('href', '/admin/duels/11/sets/new')
+    expect(screen.getByText('피어리스 초기화')).toBeInTheDocument()
 
+    await user.click(screen.getByRole('radio', { name: '이어가기' }))
     await user.click(screen.getByRole('button', { name: '새 대결' }))
 
     expect(await screen.findByText('대결 2')).toBeInTheDocument()
+    expect(screen.getByText('피어리스 이어가기')).toBeInTheDocument()
     const post = calls.find((c) => c.method === 'POST')
-    expect(post?.body).toBeNull()
+    expect(JSON.parse(post?.body ?? '')).toEqual({ fearlessMode: 'CONTINUE' })
+  })
+
+  it('첫 대결은 방식 선택 없이 초기화로만 만든다', async () => {
+    const user = userEvent.setup()
+    const { calls } = mockFetch({
+      ...me,
+      'GET /api/admin/inhouse-sessions/5': () => jsonResponse(200, { id: 5, startDate: '2026-10-20', duels: [] }),
+      'POST /api/admin/inhouse-sessions/5/duels': () => jsonResponse(201, { id: 11, seq: 1, fearlessMode: 'RESET' }),
+    })
+    renderApp('/admin/sessions/5')
+
+    await user.click(await screen.findByRole('button', { name: '새 대결' }))
+
+    expect(screen.queryByRole('radio', { name: '이어가기' })).not.toBeInTheDocument()
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true))
+    expect(JSON.parse(calls.find((c) => c.method === 'POST')?.body ?? '')).toEqual({ fearlessMode: 'RESET' })
   })
 })

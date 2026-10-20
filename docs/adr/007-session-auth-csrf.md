@@ -1,7 +1,7 @@
 # ADR 007. 담당자 인증은 서버 세션 + CSRF 쿠키/헤더, 로그인은 formLogin + JSON 응답
 
 - 상태: 확정 (M3, 2026-10-16)
-- 관련: `docs/design/m3-design.md` §4·§9(D6~D8), 학습 노트 [09](../study/09-security-auth.md), 코드 `common/config/SecurityConfig`, `auth/*`
+- 관련: `docs/design/m3-design.md` §4·§9(D6~D8), 코드 `common/config/SecurityConfig`, `auth/*`
 
 ## 배경
 

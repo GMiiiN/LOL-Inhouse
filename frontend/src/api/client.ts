@@ -12,6 +12,13 @@ export class ApiError extends Error {
   errors: FieldError[]
   conflicts: AliasConflict[]
   existingSessionId: number | undefined
+  // M4 확장 필드(설계 §11.2-7). 화면이 오류 JSON에서 바로 꺼내 쓰도록 그대로 보존한다.
+  violations: string[]
+  warnings: string[]
+  existingSetId: number | undefined
+  existingDuelId: number | undefined
+  existingSetNo: number | undefined
+  savedSetId: number | undefined
 
   constructor(status: number, body: ProblemBody = {}) {
     super(body.detail ?? body.title ?? `HTTP ${status}`)
@@ -22,6 +29,12 @@ export class ApiError extends Error {
     this.errors = body.errors ?? []
     this.conflicts = body.conflicts ?? []
     this.existingSessionId = body.existingSessionId
+    this.violations = body.violations ?? []
+    this.warnings = body.warnings ?? []
+    this.existingSetId = body.existingSetId
+    this.existingDuelId = body.existingDuelId
+    this.existingSetNo = body.existingSetNo
+    this.savedSetId = body.savedSetId
   }
 }
 
@@ -29,6 +42,7 @@ export type RequestOptions = {
   method?: string
   json?: unknown // JSON 본문
   form?: Record<string, string> // x-www-form-urlencoded 본문 (로그인)
+  formData?: FormData // multipart 본문 (결과창 업로드). Content-Type은 브라우저가 boundary와 함께 붙이므로 지정하지 않는다
 }
 
 function readCsrfCookie(): string | null {
@@ -44,13 +58,15 @@ function readCsrfCookie(): string | null {
 async function send(path: string, options: RequestOptions): Promise<Response> {
   const method = (options.method ?? 'GET').toUpperCase()
   const headers = new Headers({ Accept: 'application/json, application/problem+json' })
-  let body: string | undefined
+  let body: string | FormData | undefined
   if (options.json !== undefined) {
     headers.set('Content-Type', 'application/json')
     body = JSON.stringify(options.json)
   } else if (options.form) {
     headers.set('Content-Type', 'application/x-www-form-urlencoded')
     body = new URLSearchParams(options.form).toString()
+  } else if (options.formData) {
+    body = options.formData
   }
   if (MUTATING_METHODS.has(method)) {
     const token = readCsrfCookie()

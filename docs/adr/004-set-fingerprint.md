@@ -1,7 +1,7 @@
 # ADR 004. 세트 지문은 팀 순서와 무관한 정규 문자열로 만든다
 
 - 상태: 확정 (M2, 2026-10-16)
-- 관련: `docs/유저플로우.md` §5.1, 학습 노트 [06](../study/06-domain-set-rules.md), 코드 `domain/set/SetFingerprint`
+- 관련: `docs/유저플로우.md` §5.1, 코드 `domain/set/SetFingerprint`
 
 ## 배경
 

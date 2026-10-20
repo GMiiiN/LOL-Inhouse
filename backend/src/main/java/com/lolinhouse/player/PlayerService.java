@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -121,6 +122,42 @@ public class PlayerService {
         String normalized = normalizeOrReject(rawNickname);
         throwIfConflicts(Map.of(NicknameNormalizer.comparisonKey(normalized), normalized));
         return saveAlias(playerId, rawNickname);
+    }
+
+    /**
+     * M4 세트 저장: 결과창에서 처음 본 닉네임으로 미등록 선수와 첫 별칭을 만든다. 이미 다른 선수의 별칭이면 409 ALIAS_CONFLICT.
+     * 호출자의 트랜잭션에 참여한다(저장이 실패하면 함께 롤백).
+     */
+    @Transactional
+    public Player createUnregistered(String rawNickname) {
+        String normalized = normalizeOrReject(rawNickname);
+        throwIfConflicts(Map.of(NicknameNormalizer.comparisonKey(normalized), normalized));
+        Player player;
+        try {
+            player = playerRepository.save(Player.unregistered(normalized));
+        } catch (IllegalArgumentException e) {
+            throw invalidNickname();
+        }
+        saveAlias(player.id(), normalized);
+        return player;
+    }
+
+    /**
+     * M4 세트 저장: 같은 선수가 이미 가진 닉네임이면 건너뛰고(empty), 새 별칭이면 만든다. 다른 선수의 것이면 409 ALIAS_CONFLICT.
+     * 호출자의 트랜잭션에 참여한다.
+     */
+    @Transactional
+    public Optional<PlayerAlias> addAliasIfAbsent(Long playerId, String rawNickname) {
+        if (!playerRepository.existsById(playerId)) {
+            throw playerNotFound(playerId);
+        }
+        String key = NicknameNormalizer.comparisonKey(normalizeOrReject(rawNickname));
+        boolean ownedBySamePlayer = aliasRepository.findByNicknameKeyIn(Set.of(key)).stream()
+                .anyMatch(alias -> alias.playerId().equals(playerId));
+        if (ownedBySamePlayer) {
+            return Optional.empty();
+        }
+        return Optional.of(addAlias(playerId, rawNickname));
     }
 
     @Transactional

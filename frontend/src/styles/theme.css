@@ -1,48 +1,75 @@
-/* 색 토큰: 승인된 와이어프레임 값 그대로. 기본은 다크, <html data-theme="light">로 라이트 전환.
-*/
+/* 색·글꼴 토큰. 분위기(깊은 밤색 바탕, 금색 강조, 유리 같은 패널)는 친구 아티팩트 "League of Legends Team Maker"를 참고했다.
+   기본은 다크, <html data-theme="light">로 라이트 전환. 컴포넌트는 이 변수만 쓴다. */
 :root,
 [data-theme='dark'] {
-  --bg: #11131a;
-  --panel: #1b1e29;
-  --panel2: #232737;
-  --line: #2e3346;
-  --ink: #e6e8ef;
-  --muted: #9aa0b4;
-  --nav: #0b0d13;
+  --bg: #0b0e15;
+  --glow: #1b2440;
+  --panel: #121723;
+  --panel2: #171d2b;
+  --sunk: #0e121b;
+  --line: #222a3b;
+  --line2: #2d3649;
+  --ink: #e9ecf3;
+  --muted: #8a93a8;
+  --faint: #5a6378;
+  --nav: #0e121b;
   --win: #1d2a48;
   --lose: #3a2231;
-  --blue: #6c9bff;
-  --red: #f07383;
+  --blue: #5b9bff;
+  --blue-soft: rgba(91, 155, 255, 0.12);
+  --red: #ff6b5e;
+  --red-soft: rgba(255, 107, 94, 0.12);
   --k5: #f0a050;
-  --k4: #6c9bff;
-  --k3: #3cc4a4;
-  --chip: #2a2f42;
-  --btn: #4a6bdb;
+  --k4: #5b9bff;
+  --k3: #63c391;
+  --chip: #232b3d;
+  --accent: #d9b36a;
+  --accent-ink: #1a1408;
+  --accent-soft: rgba(217, 179, 106, 0.12);
+  --accent-line: rgba(217, 179, 106, 0.45);
+  --btn: #d9b36a;
   --err: #ff8a7d;
   --err-bg: #3a1f22;
-  --ok: #6bd69a;
-  --warn: #f0b45a;
+  --ok: #63c391;
+  --warn: #e6bb62;
+  --warn-bg: rgba(230, 187, 98, 0.12);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  --f-display: 'Noto Sans KR', 'IBM Plex Sans KR', system-ui, sans-serif;
+  --f-body: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --f-num: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 }
 
 [data-theme='light'] {
-  --bg: #eef0f5;
+  --bg: #f1f2f6;
+  --glow: #e3e8f6;
   --panel: #ffffff;
-  --panel2: #f6f7fa;
+  --panel2: #f6f7fb;
+  --sunk: #eceef5;
   --line: #dcdfe8;
+  --line2: #c9cedc;
   --ink: #1f2230;
   --muted: #5b6072;
+  --faint: #8a90a3;
   --nav: #ffffff;
   --win: #e9ecff;
   --lose: #fbe9f0;
-  --blue: #3550c8;
+  --blue: #2f5fd0;
+  --blue-soft: rgba(47, 95, 208, 0.1);
   --red: #c23a5c;
+  --red-soft: rgba(194, 58, 92, 0.1);
   --k5: #b9520f;
-  --k4: #3550c8;
+  --k4: #2f5fd0;
   --k3: #16806a;
   --chip: #eceef4;
-  --btn: #3550c8;
+  --accent: #a87414;
+  --accent-ink: #fffaf0;
+  --accent-soft: rgba(168, 116, 20, 0.1);
+  --accent-line: rgba(168, 116, 20, 0.45);
+  --btn: #a87414;
   --err: #b42318;
   --err-bg: #fdecea;
   --ok: #1e7a45;
   --warn: #8a4b00;
+  --warn-bg: rgba(138, 75, 0, 0.1);
+  --shadow: 0 8px 24px rgba(31, 34, 48, 0.08);
 }

@@ -16,6 +16,7 @@ import com.lolinhouse.player.PlayerAliasRepository;
 import com.lolinhouse.player.PlayerRepository;
 import com.lolinhouse.session.Duel;
 import com.lolinhouse.session.DuelRepository;
+import com.lolinhouse.session.FearlessMode;
 import com.lolinhouse.session.GameSet;
 import com.lolinhouse.session.GameSet.DisplayedTotals;
 import com.lolinhouse.session.GameSetPlayer;
@@ -64,7 +65,7 @@ class PersistenceMappingTest {
 
     private Duel savedDuel() {
         InhouseSession session = sessions.save(InhouseSession.of(LocalDate.of(2026, 1, 1).plusDays(dateSeq++)));
-        return duels.save(Duel.of(session.id(), 1));
+        return duels.save(Duel.of(session.id(), 1, FearlessMode.RESET));
     }
 
     private GameSet newSet(Long duelId, int setNo, int durationSec, Side side, DuelTeam winner, DuelTeam top) {
@@ -319,9 +320,9 @@ class PersistenceMappingTest {
         InhouseSession session = sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15)));
         assertThat(duels.findMaxSeq(session.id())).isZero();
 
-        duels.save(Duel.of(session.id(), 1));
-        duels.save(Duel.of(session.id(), 3));
-        duels.save(Duel.of(session.id(), 2));
+        duels.save(Duel.of(session.id(), 1, FearlessMode.RESET));
+        duels.save(Duel.of(session.id(), 3, FearlessMode.RESET));
+        duels.save(Duel.of(session.id(), 2, FearlessMode.RESET));
         flushAndClear();
 
         assertThat(duels.findMaxSeq(session.id())).isEqualTo(3);
@@ -332,8 +333,8 @@ class PersistenceMappingTest {
     void duelCountPerSessionOmitsSessionsWithoutDuels() {
         InhouseSession withDuels = sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15)));
         InhouseSession empty = sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 16)));
-        duels.save(Duel.of(withDuels.id(), 1));
-        duels.save(Duel.of(withDuels.id(), 2));
+        duels.save(Duel.of(withDuels.id(), 1, FearlessMode.RESET));
+        duels.save(Duel.of(withDuels.id(), 2, FearlessMode.RESET));
         flushAndClear();
 
         var counts = duels.countBySessionIds(List.of(withDuels.id(), empty.id()));
@@ -346,9 +347,9 @@ class PersistenceMappingTest {
     @Test
     void duelSeqDuplicateIsReportedAsDataIntegrityViolation() {
         InhouseSession session = sessions.save(InhouseSession.of(LocalDate.of(2026, 10, 15)));
-        duels.saveAndFlush(Duel.of(session.id(), 1));
+        duels.saveAndFlush(Duel.of(session.id(), 1, FearlessMode.RESET));
 
-        assertThatThrownBy(() -> duels.saveAndFlush(Duel.of(session.id(), 1)))
+        assertThatThrownBy(() -> duels.saveAndFlush(Duel.of(session.id(), 1, FearlessMode.RESET)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

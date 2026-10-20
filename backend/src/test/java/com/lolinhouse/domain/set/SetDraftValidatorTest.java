@@ -233,7 +233,7 @@ class SetDraftValidatorTest {
 
         assertThat(result.errors()).isEmpty();
         assertThat(result.warnings()).hasSize(1);
-        assertThat(result.warnings().get(0)).contains("1팀", "레드");
+        assertThat(result.warnings().get(0)).contains("A팀", "레드");
     }
 
     @Test

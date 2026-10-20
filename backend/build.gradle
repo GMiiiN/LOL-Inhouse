@@ -25,6 +25,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.flywaydb:flyway-mysql'
+	// Gemini 호출용 SDK(M4). tools/extraction-lab과 같은 버전. SDK는 Jackson 2를 쓰고 Boot는 Jackson 3를 쓴다(패키지가 달라 공존)
+	implementation 'com.google.genai:google-genai:1.78.0'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
@@ -38,8 +40,14 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// 작업자가 같은 트리에서 Gradle을 동시에 돌릴 때 build/test-results가 충돌하지 않도록 출력 디렉터리를 바꾼다.
+// 예: ./gradlew test -PbuildDirName=build-a   (기본값은 build)
+layout.buildDirectory.set(file(providers.gradleProperty('buildDirName').getOrElse('build')))
+
 tasks.named('test') {
 	useJUnitPlatform()
 	// JVM 기본 시간대를 일부러 고정한다. 로컬은 서울, CI는 TEST_TZ=UTC로 두 조합을 모두 검증한다.
 	systemProperty 'user.timezone', System.getenv('TEST_TZ') ?: 'Asia/Seoul'
+	// 테스트가 만드는 이미지 저장소·Data Dragon 캐시 등 임시 파일 위치(빌드 디렉터리 밑이라 작업자별로 분리된다)
+	systemProperty 'app.test.work-dir', layout.buildDirectory.dir('test-work').get().asFile.absolutePath
 }

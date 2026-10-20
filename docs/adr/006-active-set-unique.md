@@ -1,7 +1,7 @@
 # ADR 006. 중복 방지는 "삭제되지 않은 세트"에서만 유일하도록 생성 컬럼 + UNIQUE로 DB가 보장한다
 
 - 상태: 확정 (M3, 2026-10-16)
-- 관련: [ADR 004 세트 지문](004-set-fingerprint.md), `docs/design/m3-design.md` §1.3, 학습 노트 [08](../study/08-persistence-schema.md), `V2__core_schema.sql`(`game_set`)
+- 관련: [ADR 004 세트 지문](004-set-fingerprint.md), `docs/design/m3-design.md` §1.3, `V2__core_schema.sql`(`game_set`)
 
 ## 배경
 

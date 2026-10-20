@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
- * 역할: V2 스키마의 제약(UNIQUE·CHECK·FK·생성 컬럼)이 DB에서 실제로 위반을 막는지 JdbcTemplate으로 직접 INSERT해 확인한다.
+ * 역할: V2·V3 스키마의 제약(UNIQUE·CHECK·FK·생성 컬럼)이 DB에서 실제로 위반을 막는지 JdbcTemplate으로 직접 INSERT해 확인한다.
  * 엔티티를 거치지 않는 이유: 앱 코드가 잘못되거나 동시 요청이 와도 DB가 마지막 방어선이어야 하기 때문이다.
  * 위반 한 가지당 테스트 하나. 오류는 MySQL 오류 코드로 단정한다(1062 중복, 3819 CHECK, 1451/1452 FK, 3105 생성 컬럼 쓰기).
  */
@@ -555,5 +555,134 @@ class SchemaConstraintTest {
                 .isZero();
         assertThat(jdbc.queryForObject("select count(*) from game_set_ban where game_set_id = ?", Integer.class, set))
                 .isZero();
+    }
+
+    // ---------- extraction_job (V3) ----------
+
+    private Map<String, Object> jobRow(long duelId, String status) {
+        boolean succeeded = status.equals("SUCCEEDED");
+        boolean failed = status.equals("FAILED");
+        return row("duel_id", duelId, "status", status, "top_side", "BLUE", "capturer_position", "ADC",
+                "image_hash", "a".repeat(64), "image_key", "aa/" + "a".repeat(64) + ".png",
+                "result_json", succeeded ? "{}" : null, "error_code", failed ? "BUSY" : null, "attempt_count", 0,
+                "game_set_id", null, "created_at", TS, "started_at", null, "finished_at", null, "updated_at", TS);
+    }
+
+    private long job(long duelId, String status) {
+        return insert("extraction_job", jobRow(duelId, status));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"queued", "DONE", "EXPIRED"})
+    void jobStatusMustBeOneOfFourValues(String value) {
+        long duel = duel();
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "status", value))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void jobAcceptsAllFourStatusesWithTheirMatchingColumns() {
+        long duel = duel();
+        job(duel, "QUEUED");
+        job(duel, "RUNNING");
+        job(duel, "SUCCEEDED");
+        job(duel, "FAILED");
+    }
+
+    @Test
+    void jobTopSideAndCapturerPositionMustBeEnumValues() {
+        long duel = duel();
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "top_side", "GRAY"))))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "capturer_position", "BOT"))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void jobErrorCodeExistsExactlyWhenFailed() {
+        long duel = duel();
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "FAILED"), "error_code", null))))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "error_code", "BUSY"))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void jobResultJsonExistsExactlyWhenSucceeded() {
+        long duel = duel();
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "SUCCEEDED"), "result_json", null))))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "RUNNING"), "result_json", "{}"))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void jobSavedSetRequiresSucceededStatusAndAttemptsAreBounded() {
+        long duel = duel();
+        long set = gameSet(duel, 1, "fp-job-saved");
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "game_set_id", set))))
+                .isEqualTo(CHECK_VIOLATED);
+        insert("extraction_job", with(jobRow(duel, "SUCCEEDED"), "game_set_id", set));
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "attempt_count", 11))))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "QUEUED"), "attempt_count", -1))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void jobGameSetIsOneToOne() {
+        long duel = duel();
+        long set = gameSet(duel, 1, "fp-job-unique");
+        insert("extraction_job", with(jobRow(duel, "SUCCEEDED"), "game_set_id", set));
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", with(jobRow(duel, "SUCCEEDED"), "game_set_id", set))))
+                .isEqualTo(DUPLICATE_ENTRY);
+    }
+
+    @Test
+    void multipleJobsWithoutGameSetMayCoexist() {
+        long duel = duel();
+        job(duel, "SUCCEEDED");
+        job(duel, "SUCCEEDED");
+    }
+
+    @Test
+    void jobForeignKeysAreRestrict() {
+        long duel = duel();
+        long set = gameSet(duel, 1, "fp-job-fk");
+        long jobWithSet = insert("extraction_job", with(jobRow(duel, "SUCCEEDED"), "game_set_id", set));
+        long plainDuel = duel();
+        job(plainDuel, "QUEUED");
+
+        assertThat(mysqlErrorOf(() -> insert("extraction_job", jobRow(999_999L, "QUEUED")))).isEqualTo(CHILD_ROW_NO_PARENT);
+        assertThat(mysqlErrorOf(() -> jdbc.update("delete from duel where id = ?", plainDuel)))
+                .isEqualTo(PARENT_ROW_REFERENCED);
+        assertThat(mysqlErrorOf(() -> jdbc.update("delete from game_set where id = ?", set)))
+                .isEqualTo(PARENT_ROW_REFERENCED);
+        assertThat(jobWithSet).isPositive();
+    }
+
+    // ---------- duel.fearless_mode (V3) ----------
+
+    @ParameterizedTest
+    @ValueSource(strings = {"reset", "KEEP", "Continue"})
+    void duelFearlessModeMustBeResetOrContinue(String value) {
+        long session = session();
+
+        assertThat(mysqlErrorOf(() -> insert("duel",
+                row("session_id", session, "seq", 1, "fearless_mode", value, "created_at", TS))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void duelFearlessModeAcceptsBothValues() {
+        long session = session();
+        insert("duel", row("session_id", session, "seq", 1, "fearless_mode", "RESET", "created_at", TS));
+        insert("duel", row("session_id", session, "seq", 2, "fearless_mode", "CONTINUE", "created_at", TS));
     }
 }

@@ -6,6 +6,7 @@ import { LoginPage } from './pages/admin/LoginPage'
 import { PlayersPage } from './pages/admin/PlayersPage'
 import { SessionDetailPage } from './pages/admin/SessionDetailPage'
 import { SessionsPage } from './pages/admin/SessionsPage'
+import { SetRegisterPage } from './pages/admin/register/SetRegisterPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
 export const routes: RouteObject[] = [
@@ -27,10 +28,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/admin', element: <SessionsPage /> },
       { path: '/admin/sessions/:sessionId', element: <SessionDetailPage /> },
-      {
-        path: '/admin/duels/:duelId/sets/new',
-        element: <PlaceholderPage title="세트 등록" milestone="M4" />,
-      },
+      { path: '/admin/duels/:duelId/sets/new', element: <SetRegisterPage /> },
       { path: '/admin/players', element: <PlayersPage /> },
       { path: '/admin/history', element: <PlaceholderPage title="기록 관리" milestone="M6" /> },
     ],
