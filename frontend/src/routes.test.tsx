@@ -1,5 +1,5 @@
 // 라우터 스모크 테스트: URL에 맞는 레이아웃과 페이지가 그려지는지
-import { screen } from '@testing-library/react'
+import { cleanup, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { jsonResponse, mockFetch } from './test/mockFetch'
 import { DEFAULT_SCORE_TABLE } from './test/tierListFixtures'
@@ -11,6 +11,25 @@ describe('routes', () => {
 
     expect(screen.getByRole('heading', { name: '랭킹' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '공개 메뉴' })).toBeInTheDocument()
+  })
+
+  it('M5 공개 경로는 로그인 없이 공개 헤더 안에서 열린다', () => {
+    const cases: [string, string][] = [
+      ['/', '홈'],
+      ['/ranking', '랭킹'],
+      ['/players', '선수'],
+      ['/players/3', '선수 프로필'],
+      ['/champions', '챔피언'],
+      ['/records', '내전 기록'],
+      ['/duels/5', '대결 상세'],
+      ['/sets/7', '세트 상세'],
+    ]
+    for (const [path, title] of cases) {
+      renderApp(path)
+      expect(screen.getByRole('heading', { level: 1, name: title }), path).toBeInTheDocument()
+      expect(screen.getByRole('navigation', { name: '공개 메뉴' })).toHaveTextContent('챔피언')
+      cleanup()
+    }
   })
 
   it('/tiers는 로그인 없이 공개 헤더 안에서 열리고 편집 버튼이 없다', async () => {

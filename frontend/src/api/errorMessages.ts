@@ -72,6 +72,11 @@ const MESSAGES: Record<string, string | ((error: ApiError) => string)> = {
   TEAM_PAIR_UNSATISFIABLE: '같은 팀 조건을 만족하는 조합이 없어요. 같은 라인의 두 사람은 같은 팀이 될 수 없어요.',
   TEAM_MAKER_BUSY: '지금 다른 팀 짜기 계산이 진행 중이에요. 잠시 뒤 다시 시도해 주세요.',
   RATE_LIMITED: '요청이 너무 많아요. 잠시 뒤 다시 시도해 주세요.',
+
+  // ---- M5 공개 조회 ----
+  SET_NOT_FOUND: '세트를 찾을 수 없어요. 삭제되었거나 없는 세트예요.',
+  SET_IMAGE_NOT_FOUND: '원본 결과창 이미지가 없어요.',
+  INVALID_QUERY: '조회 조건이 올바르지 않아요. 기간의 앞뒤 날짜와 선택한 조건을 확인해 주세요.',
 }
 
 // 추출 작업이 FAILED가 된 이유(작업 상태의 errorCode). 요청 오류와 달리 HTTP 오류가 아니라 작업 상태 값이다.

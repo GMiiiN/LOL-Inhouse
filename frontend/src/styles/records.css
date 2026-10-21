@@ -1,0 +1,85 @@
+/* 내전 기록·대결/세트 상세 스타일. 색은 theme.css 토큰만 쓴다(다크/라이트 공통). 친구 아티팩트 match·mh·mt·wtag를 이식했다. */
+.record-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0 16px; color: var(--muted); font-size: 13px; }
+.record-filters label { display: inline-flex; align-items: center; gap: 6px; }
+.record-filters select { background: var(--sunk); color: var(--ink); border: 1px solid var(--line2); border-radius: 6px; padding: 4px 8px; font: inherit; max-width: 180px; }
+.record-filters-clear, .records-empty button, .original-image button, .records-more { background: transparent; color: var(--muted);
+  border: 1px solid var(--line2); border-radius: 6px; padding: 4px 12px; font: inherit; cursor: pointer; }
+.record-filters-clear:hover:not(:disabled), .records-empty button:hover, .original-image button:hover:not(:disabled), .records-more:hover:not(:disabled) {
+  color: var(--ink); border-color: var(--accent-line); }
+.record-filters-clear:disabled, .records-more:disabled { opacity: 0.5; cursor: default; }
+.records-more { display: block; margin: 20px auto; }
+.records-empty { text-align: center; color: var(--muted); padding: 40px 0; }
+.csv-link { margin-left: auto; font-size: 12px; color: var(--muted); border: 1px solid var(--line2); border-radius: 6px; padding: 3px 10px; text-decoration: none; }
+.csv-link:hover { color: var(--ink); border-color: var(--accent-line); }
+
+.session-date { font-size: 15px; color: var(--accent); margin: 24px 0 8px; }
+.duel-block { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.duel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; padding: 10px 14px; background: var(--panel2); border-bottom: 1px solid var(--line); }
+.duel-head h3 { margin: 0; font-size: 14px; }
+.duel-head a { color: var(--ink); text-decoration: none; }
+.duel-head a:hover { color: var(--accent); }
+.duel-mode, .duel-match { color: var(--muted); font-size: 12px; }
+.duel-score { font-family: var(--f-num); font-size: 14px; }
+.duel-lead { color: var(--accent); }
+
+.set-row { border-bottom: 1px solid var(--line); }
+.set-row:last-child { border-bottom: 0; }
+.set-row.open { background: var(--sunk); }
+.set-row-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 14px; font-size: 13px; }
+.set-row-toggle { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+.set-row-toggle:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.set-row-caret { color: var(--muted); width: 12px; }
+.set-row-time { color: var(--muted); font-family: var(--f-num); }
+.set-row-picks { display: inline-flex; gap: 3px; }
+.set-row-kills { font-family: var(--f-num); }
+.set-row-kills .team-blue { color: var(--blue); }
+.set-row-kills .team-red { color: var(--red); }
+.set-row-link { margin-left: auto; color: var(--muted); font-size: 12px; text-decoration: none; }
+.set-row-link + .set-row-link { margin-left: 0; }
+.set-row-link:hover { color: var(--accent); }
+.wtag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 999px; padding: 1px 8px; }
+.set-row-panel { padding: 8px 14px 14px; }
+
+.scroll { overflow-x: auto; }
+.sb { min-width: 720px; }
+.sb-wide { min-width: 760px; }
+.sb-row { display: grid; grid-template-columns: 1fr 64px 1fr; align-items: center; border-bottom: 1px solid var(--line); }
+.sb-row:last-child { border-bottom: 0; }
+.sb-cell { display: flex; align-items: center; gap: 8px; padding: 5px 10px; }
+.sb-blue { background: var(--blue-soft); justify-content: flex-start; }
+.sb-red { background: var(--red-soft); justify-content: flex-end; }
+.sb-pos { text-align: center; color: var(--muted); font-size: 12px; }
+.sb-kda, .sb-num { font-family: var(--f-num); font-size: 12px; }
+.sb-num { color: var(--muted); }
+.sb-name { color: var(--ink); text-decoration: none; font-weight: 600; }
+.sb-name:hover { color: var(--accent); }
+.sb-unregistered { color: var(--faint); font-weight: 400; font-size: 11px; }
+
+.ban-strip { margin-top: 10px; display: grid; gap: 6px; }
+.ban-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ban-item { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 8px; border-radius: 6px; border: 1px solid var(--line); }
+.ban-blue { background: var(--blue-soft); }
+.ban-red { background: var(--red-soft); }
+.ban-label { font-size: 11px; font-weight: 700; font-family: var(--f-num); }
+.ban-blue .ban-label { color: var(--blue); }
+.ban-red .ban-label { color: var(--red); }
+
+.fearless-strip { margin-top: 10px; color: var(--muted); font-size: 12px; }
+.fearless-strip summary { cursor: pointer; }
+.fearless-icons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+.set-detail-meta { color: var(--muted); font-size: 13px; margin: 4px 0; }
+.set-detail-meta a { color: var(--accent); text-decoration: none; }
+.set-detail-sub { font-size: 14px; margin: 20px 0 8px; }
+.set-totals { list-style: none; display: flex; flex-wrap: wrap; gap: 20px; padding: 0; margin: 10px 0 14px; font-size: 13px; }
+.set-total { font-family: var(--f-num); }
+
+.personal-table { border-collapse: collapse; min-width: 360px; font-size: 13px; }
+.personal-table th, .personal-table td { padding: 6px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.personal-table th { color: var(--muted); font-weight: 600; }
+.duel-sets { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-top: 12px; overflow: hidden; }
+
+.original-image { display: inline-flex; flex-direction: column; gap: 8px; }
+.original-image-view { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 20px; background: var(--bg); overflow: auto; }
+.original-image-view img { max-width: 100%; height: auto; border: 1px solid var(--line2); border-radius: 8px; }

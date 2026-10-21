@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { PLAYERS_KEY, PLAYER_PROFILES_KEY, TIER_LIST_KEY } from '../../../api/queryKeys'
+import { PLAYERS_KEY, PLAYER_PROFILES_KEY, PUBLIC_KEY, TIER_LIST_KEY } from '../../../api/queryKeys'
 import { jsonResponse, mockFetch, noContent, problemResponse, type MockRequest } from '../../../test/mockFetch'
 import { renderApp } from '../../../test/renderApp'
 import { DEFAULT_SCORE_TABLE, lane, profile, tierPlayer } from '../../../test/tierListFixtures'
@@ -99,6 +99,7 @@ describe('PlayerTierAdminPage', () => {
       expect(invalidated).toContainEqual(PLAYER_PROFILES_KEY)
       expect(invalidated).toContainEqual(TIER_LIST_KEY)
       expect(invalidated).toContainEqual(PLAYERS_KEY)
+      expect(invalidated).toContainEqual(PUBLIC_KEY)
     })
     await waitFor(() => expect(screen.queryByRole('region', { name: '선수 편집기' })).not.toBeInTheDocument())
   })

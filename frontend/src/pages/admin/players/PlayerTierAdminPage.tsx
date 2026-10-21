@@ -1,9 +1,9 @@
 // 선수 관리(/admin/players): 티어리스트 + 편집 모드 + 사람 추가 + 미등록 선수 목록. 편집기는 목록 위에 열린다.
-// 프로필을 바꾸면 티어리스트·프로필 목록·M4 등록 화면의 선수 목록(PLAYERS_KEY)을 모두 새로 불러온다.
+// 프로필을 바꾸면 티어리스트·프로필 목록·M4 등록 화면의 선수 목록(PLAYERS_KEY)·공개 조회 화면을 모두 새로 불러온다.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createProfile, deleteProfile, listProfiles, updateProfile } from '../../../api/tier'
-import { PLAYERS_KEY, PLAYER_PROFILES_KEY, TIER_LIST_KEY } from '../../../api/queryKeys'
+import { PLAYERS_KEY, PLAYER_PROFILES_KEY, PUBLIC_KEY, TIER_LIST_KEY } from '../../../api/queryKeys'
 import type { PlayerProfileRequest } from '../../../api/tierTypes'
 import { ErrorNotice } from '../../../components/ErrorNotice'
 import { TierListPanel } from '../../tier/TierListPanel'
@@ -23,6 +23,7 @@ export function PlayerTierAdminPage() {
       queryClient.invalidateQueries({ queryKey: PLAYER_PROFILES_KEY }),
       queryClient.invalidateQueries({ queryKey: TIER_LIST_KEY }),
       queryClient.invalidateQueries({ queryKey: PLAYERS_KEY }),
+      queryClient.invalidateQueries({ queryKey: PUBLIC_KEY }),
     ])
 
   const save = useMutation({
