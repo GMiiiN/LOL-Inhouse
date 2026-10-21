@@ -91,7 +91,8 @@ public class PlayerRecordService {
         return new PlayerRecordResponse(playerId, name.displayName(), name.registered(), name.mainPosition(),
                 laneTierViews(playerId), loaded.totalSets(),
                 PlayerStats.participationRate(mine, id, loaded.totalSets()), summary(mine),
-                positionSummaries(mine, id), championSummaries(mine, id), duelResults(mine, id, loaded), recentSets);
+                positionSummaries(mine, id), championSummaries(mine, id), championSummariesByPosition(mine, id),
+                duelResults(mine, id, loaded), recentSets);
     }
 
     private PlayerListResponse.Item item(PlayerNameRow name, List<PlayerSetRecord> mine) {
@@ -135,6 +136,15 @@ public class PlayerRecordService {
                         .reversed().thenComparing(Map.Entry::getKey))
                 .map(e -> new PositionSummary(e.getKey(), summary(e.getValue()), topChampions(e.getValue(), id)))
                 .toList();
+    }
+
+    /** 라인별 챔피언 요약(프로필 챔피언 표의 라인 필터용). 라인 순서는 탑→서포터, 뛴 라인만. */
+    private static Map<Position, List<ChampionSummary>> championSummariesByPosition(List<PlayerSetRecord> mine, String id) {
+        Map<Position, List<PlayerSetRecord>> byPosition = new EnumMap<>(Position.class);
+        mine.forEach(r -> byPosition.computeIfAbsent(r.position(), p -> new ArrayList<>()).add(r));
+        Map<Position, List<ChampionSummary>> result = new EnumMap<>(Position.class);
+        byPosition.forEach((position, records) -> result.put(position, championSummaries(records, id)));
+        return result;
     }
 
     /** 사용 횟수순(같으면 키 순, PlayerStats.byChampion 순서 그대로). */

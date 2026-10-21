@@ -96,3 +96,4 @@
   .home-duos { position: absolute; top: 0; right: 100%; width: 280px; margin-right: 28px; }
 }
 .home-more { margin: 14px 0 0; font-size: 17px; }
+.stat-champ-lanes { width: fit-content; margin-bottom: 10px; }

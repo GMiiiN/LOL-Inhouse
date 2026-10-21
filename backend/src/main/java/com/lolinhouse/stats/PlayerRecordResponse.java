@@ -26,6 +26,7 @@ public record PlayerRecordResponse(
         SummaryView summary,
         List<PositionSummary> byPosition,
         List<ChampionSummary> byChampion,
+        Map<Position, List<ChampionSummary>> byChampionByPosition, // 그 라인으로 뛴 기록만의 챔피언별 요약(뛴 라인만 키)
         DuelResults duels,
         List<SetView> recentSets) {
 

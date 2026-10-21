@@ -92,6 +92,7 @@ class PublicDtoContractTest {
                 new PlayerRecordResponse(1, "홍길동", true, Position.MID, lanes, 5, 0.4, sampleSummary(),
                         List.of(new PlayerRecordResponse.PositionSummary(Position.MID, sampleSummary(), List.of())),
                         List.of(new PlayerRecordResponse.ChampionSummary("Ahri", sampleSummary())),
+                        Map.of(Position.MID, List.of(new PlayerRecordResponse.ChampionSummary("Ahri", sampleSummary()))),
                         new PlayerRecordResponse.DuelResults(1, 0, 0, List.of(new PlayerRecordResponse.Item(21,
                                 LocalDate.of(2026, 10, 12), 1, 2, 1, com.lolinhouse.domain.stats.DuelResult.WIN))),
                         List.of(sampleSet())),

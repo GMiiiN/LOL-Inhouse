@@ -129,6 +129,7 @@ export type PlayerRecord = {
   summary: SummaryView
   byPosition: PositionSummary[]
   byChampion: ChampionSummary[]
+  byChampionByPosition: Partial<Record<Position, ChampionSummary[]>> // 그 라인으로 뛴 기록만의 챔피언별(뛴 라인만 키)
   duels: { wins: number; draws: number; losses: number; items: DuelResultItem[] }
   recentSets: SetView[] // 최대 3
 }

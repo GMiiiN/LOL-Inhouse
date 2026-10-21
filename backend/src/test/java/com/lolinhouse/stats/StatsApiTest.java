@@ -260,6 +260,9 @@ class StatsApiTest {
                 .containsExactly("C00", "C10");
         assertThat(profile.byChampion().get(0).summary().sets()).isEqualTo(3);
         assertThat(profile.byChampion().get(0).summary().wins()).isEqualTo(3);
+        // 라인별 챔피언 요약: 뛴 라인(TOP)만 키, 그 라인 기록의 챔피언 표와 같다
+        assertThat(profile.byChampionByPosition()).containsOnlyKeys(Position.TOP);
+        assertThat(profile.byChampionByPosition().get(Position.TOP)).isEqualTo(profile.byChampion());
 
         assertThat(profile.duels().wins()).isEqualTo(2);
         assertThat(profile.duels().draws()).isEqualTo(1);
