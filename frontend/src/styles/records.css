@@ -35,6 +35,9 @@
 .set-row { container-type: inline-size; }
 .with-names .set-row-lineup { order: 2; flex: 1 0 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; }
 .with-names .set-row-link { order: 1; }
+/* 이름 없는 줄(내전 기록·대결): 남는 폭 가운데에 픽·킬·픽을 두어 왼쪽으로 쏠리지 않게. 시간 칸 폭을 고정해 줄끼리 세로로 맞춘다 */
+.set-row-head:not(.with-names) .set-row-lineup { flex: 1 1 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; }
+.set-row-time { min-width: 3.6em; text-align: center; }
 .set-row-lineup .set-row-picks-blue { justify-self: end; }
 .set-row-lineup .set-row-picks-red { justify-self: start; }
 @container (min-width: 1150px) {

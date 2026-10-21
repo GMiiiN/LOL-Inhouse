@@ -25,7 +25,7 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false, sho
   const team1 = set.teams[0]
   const winnerName = set.winnerTeam === 'TEAM1' ? 'A팀' : 'B팀'
   const panelId = `set-row-panel-${set.setId}`
-  // 양 팀 픽과 킬. 이름을 함께 보일 때는 줄 폭이 넉넉하면 한 줄, 좁으면 아래 줄로 내린다(records.css 컨테이너 쿼리)
+  // 양 팀 픽과 킬. 줄 가운데에 [블루 픽 | 킬 | 레드 픽]으로 맞춘다. 이름을 함께 보일 때 좁으면 아래 줄로(records.css 컨테이너 쿼리)
   const lineup = (
     <>
       <span className="set-row-picks set-row-picks-blue" data-testid="picks-blue">
@@ -64,7 +64,7 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false, sho
         <TeamLabel team="TEAM1" side={team1.side} />
         <span className="wtag">{winnerName} 승</span>
         <span className="set-row-time">{formatDuration(set.durationSec)}</span>
-        {showNames ? <div className="set-row-lineup">{lineup}</div> : lineup}
+        <div className="set-row-lineup">{lineup}</div>
         {showDuelLink && (
           <Link className="set-row-link" to={`/duels/${set.duelId}`}>
             대결 {set.duelSeq}
