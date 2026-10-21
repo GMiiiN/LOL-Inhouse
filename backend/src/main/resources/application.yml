@@ -38,6 +38,9 @@ spring:
 
 server:
   shutdown: graceful
+  # 데스크탑 운영(compose)에서만 native로 켠다: Tomcat이 신뢰 프록시(기본: 루프백·사설 대역, 곧 nginx 컨테이너)의 X-Forwarded-For/Proto만 믿고 실제 접속 주소로 바꾼다.
+  # 개발(Vite 프록시 없이 직접 접속)에서는 헤더를 위조할 수 있으니 끈다. 설명: docs/design/m55-design.md D5
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
   tomcat:
     # 상한을 넘은 업로드를 Tomcat이 끝까지 읽어 버리는 한도(기본 2MB). 이보다 크면 413 대신 연결이 끊긴다. request 상한보다 크게 둔다.
     max-swallow-size: 12MB

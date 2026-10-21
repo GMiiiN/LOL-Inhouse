@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 역할: 공개 팀 짜기 계산의 남용 방지(설계 §11 P2-7). 접속 주소별 분당 30회(메모리 고정 창)와 동시 계산 2개 한도.
- * 터널 뒤 실제 주소 헤더 처리는 M5.5에서 한다. 여기서는 받은 주소 문자열을 그대로 키로 쓴다.
+ * 실제 접속 주소 복원은 서버 설정(forward-headers-strategy)이 하고, 여기서는 받은 주소 문자열을 그대로 키로 쓴다.
  */
 @Component
 public class TeamMakerGuard {
