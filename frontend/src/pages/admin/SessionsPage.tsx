@@ -2,9 +2,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type SyntheticEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { createSession, listSessions } from '../../api/admin'
+import { createSession, deleteSession, listSessions } from '../../api/admin'
 import { ApiError } from '../../api/client'
-import { SESSIONS_KEY } from '../../api/queryKeys'
+import { PUBLIC_KEY, SESSIONS_KEY } from '../../api/queryKeys'
 import { ErrorNotice } from '../../components/ErrorNotice'
 
 // 오늘 날짜(이 PC의 현재 날짜)를 "YYYY-MM-DD"로. toISOString은 UTC라 하루 밀릴 수 있어 쓰지 않는다.
@@ -29,6 +29,22 @@ export function SessionsPage() {
       navigate(`/admin/sessions/${created.id}`)
     },
   })
+
+  const remove = useMutation({
+    mutationFn: deleteSession,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: SESSIONS_KEY }),
+        queryClient.invalidateQueries({ queryKey: PUBLIC_KEY }),
+      ]),
+  })
+
+  function handleDelete(id: number, startDate: string) {
+    if (!window.confirm(`${startDate} 내전 묶음을 삭제할까요? 되돌릴 수 없어요.`)) {
+      return
+    }
+    remove.mutate(id)
+  }
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -77,6 +93,7 @@ export function SessionsPage() {
       <h2>내전 묶음 목록</h2>
       {sessions.isPending && <p className="muted-text">불러오는 중입니다...</p>}
       <ErrorNotice error={sessions.error} />
+      <ErrorNotice error={remove.error} />
       {sessions.data?.length === 0 && <p className="muted-text">아직 내전 묶음이 없습니다.</p>}
       {sessions.data && sessions.data.length > 0 && (
         <table className="data-table">
@@ -94,6 +111,17 @@ export function SessionsPage() {
                 <td>{session.duelCount}</td>
                 <td>
                   <Link to={`/admin/sessions/${session.id}`}>열기</Link>
+                  {session.setCount === 0 && (
+                    <button
+                      type="button"
+                      className="header-button tier-danger"
+                      aria-label={`${session.startDate} 묶음 삭제`}
+                      disabled={remove.isPending}
+                      onClick={() => handleDelete(session.id, session.startDate)}
+                    >
+                      삭제
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

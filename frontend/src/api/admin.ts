@@ -36,6 +36,9 @@ export const listSessions = () => apiRequest<InhouseSessionSummary[]>('/api/admi
 export const getSession = (id: number) =>
   apiRequest<InhouseSessionDetail>(`/api/admin/inhouse-sessions/${id}`)
 
+export const deleteSession = (id: number) =>
+  apiRequest<void>(`/api/admin/inhouse-sessions/${id}`, { method: 'DELETE' })
+
 export const createSession = (startDate: string) =>
   apiRequest<InhouseSessionSummary>('/api/admin/inhouse-sessions', { method: 'POST', json: { startDate } })
 

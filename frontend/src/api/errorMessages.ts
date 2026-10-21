@@ -53,6 +53,7 @@ const MESSAGES: Record<string, string | ((error: ApiError) => string)> = {
   LANE_TIER_REQUIRED: '최소 한 라인은 티어를 골라 주세요.',
   NICKNAME_REQUIRED: '닉네임을 하나 이상 입력해 주세요.',
   DUPLICATE_REAL_NAME: '같은 이름이 이미 있어요.',
+  SESSION_HAS_SETS: '세트가 있는 묶음은 지울 수 없어요.',
   PLAYER_HAS_RECORDS: '세트 기록이 있는 선수는 삭제할 수 없습니다.',
   INVALID_SCORE_TABLE: '점수는 빈칸 없이 -999~999 사이의 정수로 입력해 주세요.',
   TEAM_PARTICIPANT_COUNT: '참가자를 정확히 10명 골라 주세요.',

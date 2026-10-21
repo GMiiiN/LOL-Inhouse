@@ -97,7 +97,7 @@ tailscale funnel --bg 8088
 tailscale funnel status
 
 # 공개 중지
-tailscale funnel --bg 8088 off
+tailscale funnel --https=443 off
 ```
 
 연결 후 확인:

@@ -66,3 +66,21 @@ test('요주 인물: bee가 true일 때만 flagged, 신규와 갱신 모두 아�
   assert.strictEqual(buildRequest(convertPlayer({ name: 'A', nicks: ['a'] }), existing).body.flagged, false)
   assert.strictEqual(buildRequest(flagged, { ...existing, flagged: false }).body.flagged, true)
 })
+
+test('미등록 선수: 닉네임이 겹치는 미등록 선수가 하나면 실명을 붙여 등록(adopt), 둘 이상이면 건너뜀', () => {
+  const unregA = { id: 7, realName: null, mainPosition: null, lanes: {}, aliases: [{ nickname: '닉A' }] }
+  const unregB = { id: 8, realName: null, mainPosition: null, lanes: {}, aliases: [{ nickname: '닉B' }] }
+  const players = [
+    { name: '갑', lanes: { top: { t: 2, s: '중' } }, nicks: ['닉a', '새닉'] },
+    { name: '을', lanes: { mid: { t: 3, s: '상' } }, nicks: ['닉A', '닉B'] },
+    { name: '병', lanes: { jg: { t: 4, s: '하' } }, nicks: ['다른닉'] },
+  ]
+  const plan = planImport(players, [unregA, unregB])
+  assert.equal(plan[0].action, 'adopt')
+  assert.equal(plan[0].id, 7)
+  assert.equal(plan[0].body.realName, '갑')
+  assert.deepEqual(plan[0].body.nicknames, ['닉A', '새닉'])
+  assert.equal(plan[1].action, 'skip')
+  assert.equal(plan[1].reason, 'MULTIPLE_UNREGISTERED')
+  assert.equal(plan[2].action, 'create')
+})

@@ -78,8 +78,8 @@ const count = (arr, f) => arr.filter(f).length
 // 이름은 --verbose일 때만 출력한다. 기본은 순번·건수만.
 function printPlan(plan, verbose) {
   const skips = plan.filter((p) => p.action === 'skip')
-  console.log(`선수 ${plan.length}명: 생성 ${count(plan, (p) => p.action === 'create')}, 갱신 ${count(plan, (p) => p.action === 'update')}, 건너뜀 ${skips.length}`)
-  for (const reason of ['NO_NAME', 'NO_LANE', 'NO_NICKNAME']) {
+  console.log(`선수 ${plan.length}명: 생성 ${count(plan, (p) => p.action === 'create')}, 갱신 ${count(plan, (p) => p.action === 'update')}, 미등록 선수에 실명 연결 ${count(plan, (p) => p.action === 'adopt')}, 건너뜀 ${skips.length}`)
+  for (const reason of ['NO_NAME', 'NO_LANE', 'NO_NICKNAME', 'MULTIPLE_UNREGISTERED']) {
     const list = skips.filter((p) => p.reason === reason)
     if (list.length) console.log(`  건너뜀 ${reason}: ${list.length}건 (순번 ${list.map((p) => p.index).join(', ')})`)
   }
