@@ -6,17 +6,17 @@ import { DEFAULT_SCORE_TABLE } from './test/tierListFixtures'
 import { renderApp } from './test/renderApp'
 
 describe('routes', () => {
-  it('/ranking은 공개 헤더와 랭킹 자리표시자를 그린다', () => {
+  it('/ranking은 공개 헤더와 승률 화면을 그린다', () => {
     renderApp('/ranking')
 
-    expect(screen.getByRole('heading', { name: '랭킹' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '승률' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '공개 메뉴' })).toBeInTheDocument()
   })
 
   it('M5 공개 경로는 로그인 없이 공개 헤더 안에서 열린다', () => {
     const cases: [string, string][] = [
       ['/', '홈'],
-      ['/ranking', '랭킹'],
+      ['/ranking', '승률'],
       ['/players', '선수'],
       ['/players/3', '선수 프로필'],
       ['/champions', '챔피언'],
@@ -58,7 +58,7 @@ describe('routes', () => {
     expect(await screen.findByLabelText('1티어')).toHaveValue(60)
   })
 
-  it('로그인한 상태에서 /admin/players는 담당자 헤더와 새 선수 관리(티어리스트 + 편집)를 그린다', async () => {
+  it('로그인한 상태에서 /admin/players는 담당자 헤더와 새 선수 관리(티어리스트 + 사람 추가)를 그린다', async () => {
     mockFetch({
       'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
       'GET /api/tier-list': () => jsonResponse(200, { scoreTable: DEFAULT_SCORE_TABLE, players: [] }),
@@ -69,7 +69,6 @@ describe('routes', () => {
     expect(await screen.findByRole('heading', { name: '선수 관리' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '담당자 메뉴' })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: '사람 추가' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '편집 모드' })).toBeInTheDocument()
   })
 
   it('M3 임시 경로 /admin/players-legacy는 더 이상 없다', async () => {

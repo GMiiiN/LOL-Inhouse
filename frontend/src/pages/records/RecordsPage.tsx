@@ -43,6 +43,11 @@ export function RecordsPage() {
         <h1>내전 기록</h1>
         <CsvLink query={query} />
       </div>
+      {records.data && (
+        <p className="records-totals">
+          총 {records.data.pages[0].totals.duels}경기 · {records.data.pages[0].totals.sets}세트
+        </p>
+      )}
       <RecordFilters
         player={player}
         champion={champion}

@@ -415,7 +415,7 @@ class StatsApiTest {
     // ---------- 홈 ----------
 
     @Test
-    void 홈은_최근_5세트를_최근순으로_담고_라인_키_다섯_개를_항상_준다() throws Exception {
+    void 홈은_최근_3세트를_최근순으로_담고_라인_키_다섯_개를_항상_준다() throws Exception {
         List<Long> ids = fixtures.tenPlayers();
         long duel = fixtures.duel(fixtures.session(PublicReadFixtures.day(2129, 300)), 1, FearlessMode.RESET);
         for (int no = 1; no <= 6; no++) {
@@ -425,7 +425,7 @@ class StatsApiTest {
         HomeResponse home = homeService.get();
 
         // 홈은 기간 필터가 없고 DB를 다른 테스트와 공유하므로 정확한 세트 목록 대신 개수와 정렬을 본다
-        assertThat(home.recentSets()).hasSize(5);
+        assertThat(home.recentSets()).hasSize(3);
         assertThat(home.recentSets()).isSortedAccordingTo(java.util.Comparator
                 .comparing((com.lolinhouse.record.SetView s) -> s.sessionDate())
                 .thenComparingInt(com.lolinhouse.record.SetView::duelSeq)
@@ -433,7 +433,7 @@ class StatsApiTest {
         assertThat(home.topPicksByPosition()).containsOnlyKeys(Position.values());
         assertThat(home.topPicksByPosition().get(Position.TOP).picks()).isPositive();
         json("/api/home");
-        mockMvc.perform(get("/api/home")).andExpect(jsonPath("$.recentSets.length()").value(5))
+        mockMvc.perform(get("/api/home")).andExpect(jsonPath("$.recentSets.length()").value(3))
                 .andExpect(jsonPath("$.topPicksByPosition.SUPPORT").exists());
     }
 

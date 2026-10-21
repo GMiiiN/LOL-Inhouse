@@ -1,5 +1,5 @@
 // 내전 관리 화면 테스트: 목록, 묶음 생성 충돌 안내, 새 대결(피어리스 방식 선택)
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { jsonResponse, mockFetch, noContent, problemResponse } from '../../test/mockFetch'
@@ -35,7 +35,8 @@ describe('SessionsPage', () => {
     })
     renderApp('/admin')
 
-    await user.click(await screen.findByRole('button', { name: '묶음 만들기' }))
+    fireEvent.change(await screen.findByLabelText('시작일'), { target: { value: '2026-10-20' } })
+    await user.click(screen.getByRole('button', { name: '묶음 만들기' }))
 
     const link = await screen.findByRole('link', { name: '기존 묶음으로 이동' })
     expect(link).toHaveAttribute('href', '/admin/sessions/42')
@@ -51,14 +52,47 @@ describe('SessionsPage', () => {
     })
     const { router } = renderApp('/admin')
 
-    const dateInput = await screen.findByLabelText('시작일')
-    await user.clear(dateInput)
-    await user.type(dateInput, '2026-10-20')
+    fireEvent.change(await screen.findByLabelText('시작일'), { target: { value: '2026-10-20' } })
     await user.click(screen.getByRole('button', { name: '묶음 만들기' }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/sessions/5'))
     const post = calls.find((c) => c.method === 'POST' && c.path === '/api/admin/inhouse-sessions')
     expect(JSON.parse(post?.body ?? '')).toEqual({ startDate: '2026-10-20' })
+  })
+})
+
+describe('SessionsPage 날짜·목록', () => {
+  it('새 묶음 날짜는 빈칸으로 시작하고 날짜를 골라야 버튼이 켜진다', async () => {
+    mockFetch({ ...me, 'GET /api/admin/inhouse-sessions': () => jsonResponse(200, []) })
+    renderApp('/admin')
+
+    const input = await screen.findByLabelText('시작일')
+    expect(input).toHaveValue('')
+    expect(screen.getByRole('button', { name: '묶음 만들기' })).toBeDisabled()
+
+    fireEvent.change(input, { target: { value: '2026-10-20' } })
+    expect(screen.getByRole('button', { name: '묶음 만들기' })).toBeEnabled()
+  })
+
+  it('최신 날짜가 위에 오고 대결 수와 세트 수(삭제 제외)를 보여 준다', async () => {
+    mockFetch({
+      ...me,
+      'GET /api/admin/inhouse-sessions': () =>
+        jsonResponse(200, [
+          { id: 1, startDate: '2026-10-01', duelCount: 1, setCount: 2, activeSetCount: 2 },
+          { id: 3, startDate: '2026-10-20', duelCount: 4, setCount: 9, activeSetCount: 7 },
+          { id: 2, startDate: '2026-10-10', duelCount: 2, setCount: 3, activeSetCount: 3 },
+        ]),
+    })
+    renderApp('/admin')
+
+    const rows = await screen.findAllByRole('row')
+    expect(rows[1]).toHaveTextContent('2026-10-20')
+    expect(rows[2]).toHaveTextContent('2026-10-10')
+    expect(rows[3]).toHaveTextContent('2026-10-01')
+    const cells = within(rows[1]).getAllByRole('cell')
+    expect(cells[1]).toHaveTextContent('4')
+    expect(cells[2]).toHaveTextContent('7')
   })
 })
 
@@ -174,5 +208,56 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByRole('radio', { name: '이어가기' })).not.toBeInTheDocument()
     await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true))
     expect(JSON.parse(calls.find((c) => c.method === 'POST')?.body ?? '')).toEqual({ fearlessMode: 'RESET' })
+  })
+})
+
+describe('SessionDetailPage 넣은 세트 표', () => {
+  it('대결마다 세트 표를 보여 주고 삭제된 세트와 상세 링크를 표시한다', async () => {
+    const set = (overrides: object) => ({
+      setId: 100,
+      setNo: 1,
+      team1Side: 'BLUE',
+      winnerTeam: 'TEAM1',
+      durationSec: 1805,
+      shotDate: '2026-10-20',
+      team1Kills: 25,
+      team2Kills: 18,
+      source: 'IMAGE',
+      createdAt: '2026-10-20T13:05:00Z',
+      deleted: false,
+      ...overrides,
+    })
+    mockFetch({
+      ...me,
+      'GET /api/admin/inhouse-sessions/5': () =>
+        jsonResponse(200, {
+          id: 5,
+          startDate: '2026-10-20',
+          duels: [
+            { id: 11, seq: 1, fearlessMode: 'RESET', sets: [set({}), set({ setId: 101, setNo: 2, team1Side: 'RED', winnerTeam: 'TEAM2', durationSec: null, shotDate: null, source: 'IMPORT', deleted: true })] },
+            { id: 12, seq: 2, fearlessMode: 'RESET', sets: [] },
+          ],
+        }),
+    })
+    renderApp('/admin/sessions/5')
+
+    const tables = await screen.findAllByRole('table', { name: '넣은 세트' })
+    expect(tables).toHaveLength(1)
+    const rows = within(tables[0]).getAllByRole('row')
+    expect(rows[1]).toHaveTextContent('세트 1')
+    expect(rows[1]).toHaveTextContent('블루')
+    expect(rows[1]).toHaveTextContent('A팀')
+    expect(rows[1]).toHaveTextContent('30:05')
+    expect(rows[1]).toHaveTextContent('2026-10-20')
+    expect(rows[1]).toHaveTextContent('25 : 18')
+    expect(rows[1]).toHaveTextContent('결과창')
+    expect(rows[1]).toHaveTextContent('10-20 22:05') // 한국 시간
+    expect(within(rows[1]).getByRole('link', { name: '세트 1 상세' })).toHaveAttribute('href', '/sets/100')
+    expect(rows[2]).toHaveTextContent('레드')
+    expect(rows[2]).toHaveTextContent('B팀')
+    expect(rows[2]).toHaveTextContent('—')
+    expect(rows[2]).toHaveTextContent('가져오기')
+    expect(rows[2]).toHaveTextContent('삭제됨')
+    expect(screen.getByText('아직 넣은 세트가 없습니다.')).toBeInTheDocument()
   })
 })

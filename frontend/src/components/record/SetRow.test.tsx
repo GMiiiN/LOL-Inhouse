@@ -60,6 +60,12 @@ describe('SetRow', () => {
     expect(labels).toEqual(['B1', 'R1', 'B2', 'R2', 'B3', 'R3', 'B4', 'R4', 'B5', 'R5'])
   })
 
+  it('밴 사이에 화살표를 둔다(접근성 라벨 유지)', () => {
+    renderWith(<SetRow set={makeSet()} defaultExpanded />)
+    expect(screen.getByRole('group', { name: '밴' })).toBeInTheDocument()
+    expect(document.querySelectorAll('.ban-arrow').length).toBe(9) // 10개 사이 9개(줄 바꿈 지점 포함)
+  })
+
   it('피어리스 제한 줄에 개수를 쓴다', () => {
     renderWith(<SetRow set={makeSet()} defaultExpanded />)
     expect(screen.getByText('이 세트 시점 제한 2개')).toBeInTheDocument()

@@ -1,5 +1,7 @@
 package com.lolinhouse.tier;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,8 @@ public class PlayerProfileService {
 
     /** 새로 만들 때의 닉네임 최대 개수. 수정은 max(이 값, 기존 개수). */
     static final int MAX_NICKNAMES = 10;
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final PlayerService playerService;
     private final PlayerRepository players;
@@ -185,7 +189,10 @@ public class PlayerProfileService {
         return request.nicknames();
     }
 
-    /** 라인마다 추가·수정·삭제. recordChange=false면 값만 바꾸고 ▲▼는 건드리지 않는다. */
+    /**
+     * 라인마다 추가·수정·삭제. recordChange=false면 값만 바꾸고 ▲▼와 tier_changed_on은 건드리지 않는다.
+     * recordChange=true일 때만 값이 실제로 바뀐 라인(새 라인 포함)에 오늘(Asia/Seoul)을 tier_changed_on으로 적는다.
+     */
     private void applyLanes(Long playerId, Map<Position, LaneTier> wanted, boolean recordChange) {
         Map<Position, PlayerLaneTier> current = laneTiers.findByPlayerId(playerId).stream()
                 .collect(Collectors.toMap(PlayerLaneTier::position, l -> l));
@@ -197,9 +204,17 @@ public class PlayerProfileService {
                     laneTiers.delete(existing);
                 }
             } else if (existing == null) {
-                laneTiers.save(PlayerLaneTier.create(playerId, position, next));
+                PlayerLaneTier created = PlayerLaneTier.create(playerId, position, next);
+                if (recordChange) {
+                    created.markTierChangedOn(LocalDate.now(SEOUL));
+                }
+                laneTiers.save(created);
             } else if (recordChange) {
+                boolean changed = !existing.laneTier().equals(next);
                 existing.changeTo(next);
+                if (changed) {
+                    existing.markTierChangedOn(LocalDate.now(SEOUL));
+                }
             } else {
                 existing.overwrite(next);
             }

@@ -1,7 +1,7 @@
 // 홈: 전체 빈 상태, 라인별 최다 픽(null이면 "—")과 최근 경기
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { Home, SetView } from '../../api/publicTypes'
+import type { DuoEntry, Duos, Home, SetView } from '../../api/publicTypes'
 import { jsonResponse, mockFetch } from '../../test/mockFetch'
 import { championsHandler, renderPage } from '../../test/statsFixtures'
 import { HomePage } from './HomePage'
@@ -40,8 +40,24 @@ const set: SetView = {
   fearlessRestricted: [],
 }
 
-function setup(home: Home) {
-  mockFetch({ 'GET /api/champions': championsHandler, 'GET /api/home': () => jsonResponse(200, home) })
+const duo = (a: number, b: number, wins: number, losses: number): DuoEntry => ({
+  players: [
+    { playerId: a, displayName: `선수${a}`, registered: true },
+    { playerId: b, displayName: `선수${b}`, registered: true },
+  ],
+  sets: wins + losses,
+  wins,
+  losses,
+  winRate: wins / (wins + losses),
+})
+const noDuos: Duos = { minSets: 3, best: [], worst: [] }
+
+function setup(home: Home, duos: Duos = noDuos) {
+  mockFetch({
+    'GET /api/champions': championsHandler,
+    'GET /api/home': () => jsonResponse(200, home),
+    'GET /api/duos': () => jsonResponse(200, duos),
+  })
   renderPage(<HomePage />, '/')
 }
 
@@ -62,5 +78,34 @@ describe('HomePage', () => {
     expect(screen.getByText('2026-10-12')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '대결 1' })).toHaveAttribute('href', `/duels/${set.duelId}`)
     expect(screen.getByRole('link', { name: '세트 상세' })).toHaveAttribute('href', '/sets/11')
+  })
+
+  it('왼쪽 열에 최고·최악의 듀오 3쌍씩과 3세트 안내를 보여 준다', async () => {
+    setup(
+      { recentSets: [set], topPicksByPosition: none },
+      {
+        minSets: 3,
+        best: [duo(1, 2, 5, 0), duo(3, 4, 4, 1), duo(5, 6, 3, 1)],
+        worst: [duo(7, 8, 0, 4), duo(9, 10, 1, 4), duo(11, 12, 1, 3)],
+      },
+    )
+    const best = await screen.findByRole('region', { name: '최고의 듀오' })
+    expect(within(best).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(best).getByText('선수1 + 선수2')).toBeInTheDocument()
+    expect(within(best).getByText(/5세트 · 5승 0패/)).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: '최악의 듀오' })).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByText(/3세트 이상 뛴 두 사람만/)).toBeInTheDocument()
+  })
+
+  it('듀오가 없으면 빈 상태를 보여 준다', async () => {
+    setup({ recentSets: [set], topPicksByPosition: none })
+    expect(await screen.findByText(/함께 3세트 이상 뛴 듀오가 없어요/)).toBeInTheDocument()
+  })
+
+  it('최근 경기 3개와 내전 기록 더 보기 링크를 보여 준다', async () => {
+    const sets = [11, 12, 13].map((id) => ({ ...set, setId: id }))
+    setup({ recentSets: sets, topPicksByPosition: none })
+    expect(await screen.findAllByRole('link', { name: '세트 상세' })).toHaveLength(3)
+    expect(screen.getByRole('link', { name: '내전 기록 더 보기' })).toHaveAttribute('href', '/records')
   })
 })

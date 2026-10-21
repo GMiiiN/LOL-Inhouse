@@ -46,17 +46,24 @@ public final class TeamMaker {
      */
     public static TeamMakeResult auto(List<TeamMakerPlayer> ordered, Set<TogetherPair> together, ScoreTable table,
             Map<Long, Position> fixedLanes) {
+        return auto(ordered, together, Set.of(), table, fixedLanes);
+    }
+
+    /** apart 쌍은 서로 다른 팀이어야 유효하다. apart가 비면 위 메서드와 결과가 완전히 같다. */
+    public static TeamMakeResult auto(List<TeamMakerPlayer> ordered, Set<TogetherPair> together,
+            Set<TogetherPair> apart, ScoreTable table, Map<Long, Position> fixedLanes) {
         if (ordered.size() != PLAYER_COUNT) {
             throw new IllegalArgumentException("자동 모드는 정확히 10명이어야 합니다: " + ordered.size());
         }
         int[][] pairIndexes = pairIndexes(ordered, together);
+        int[][] apartIndexes = pairIndexes(ordered, apart);
         Map<Integer, List<Assignment>> cache = new HashMap<>();
         List<Candidate> candidates = new ArrayList<>();
         for (int mask = 0; mask < (1 << PLAYER_COUNT); mask++) {
             if ((mask & 1) == 0 || Integer.bitCount(mask) != TEAM_SIZE) {
                 continue;
             }
-            if (!satisfied(mask, pairIndexes)) {
+            if (!satisfied(mask, pairIndexes) || !separated(mask, apartIndexes)) {
                 continue;
             }
             List<Assignment> blue = cache.computeIfAbsent(mask, m -> assignments(ordered, m, table, fixedLanes));
@@ -79,14 +86,16 @@ public final class TeamMaker {
      */
     public static TeamMakeResult manual(Map<Position, List<TeamMakerPlayer>> picks, Set<TogetherPair> together,
             ScoreTable table) {
+        return manual(picks, together, Set.of(), table);
+    }
+
+    /** apart 쌍은 서로 다른 팀이어야 유효하다. apart가 비면 위 메서드와 결과가 완전히 같다. */
+    public static TeamMakeResult manual(Map<Position, List<TeamMakerPlayer>> picks, Set<TogetherPair> together,
+            Set<TogetherPair> apart, ScoreTable table) {
         Set<Long> participantIds = new HashSet<>();
         picks.values().forEach(pair -> pair.forEach(p -> participantIds.add(p.id())));
-        Set<TogetherPair> relevant = new HashSet<>();
-        for (TogetherPair pair : together) {
-            if (participantIds.contains(pair.first()) && participantIds.contains(pair.second())) {
-                relevant.add(pair);
-            }
-        }
+        Set<TogetherPair> relevant = participantsOnly(together, participantIds);
+        Set<TogetherPair> relevantApart = participantsOnly(apart, participantIds);
         List<Candidate> candidates = new ArrayList<>();
         for (int c = 1; c < (1 << LANE_COUNT); c += 2) {
             Slot[] blue = new Slot[LANE_COUNT];
@@ -100,7 +109,7 @@ public final class TeamMaker {
                 blue[lane] = firstIsBlue ? first : second;
                 red[lane] = firstIsBlue ? second : first;
             }
-            if (!satisfied(blue, relevant)) {
+            if (!satisfied(blue, relevant) || !separated(blue, relevantApart)) {
                 continue;
             }
             candidates.add(candidate(new Assignment(blue), new Assignment(red)));
@@ -219,6 +228,16 @@ public final class TeamMaker {
         return candidates.stream().limit(MAX_OPTIONS).map(Candidate::toOption).toList();
     }
 
+    private static Set<TogetherPair> participantsOnly(Set<TogetherPair> pairs, Set<Long> participantIds) {
+        Set<TogetherPair> out = new HashSet<>();
+        for (TogetherPair pair : pairs) {
+            if (participantIds.contains(pair.first()) && participantIds.contains(pair.second())) {
+                out.add(pair);
+            }
+        }
+        return out;
+    }
+
     /** 쌍을 (참가자 번호, 참가자 번호)로 바꾼다. 참가자가 아닌 사람이 낀 쌍은 뺀다. */
     private static int[][] pairIndexes(List<TeamMakerPlayer> ordered, Set<TogetherPair> together) {
         Map<Long, Integer> indexById = new HashMap<>();
@@ -234,6 +253,31 @@ public final class TeamMaker {
     private static boolean satisfied(int mask, int[][] pairIndexes) {
         for (int[] pair : pairIndexes) {
             if (((mask >> pair[0]) & 1) != ((mask >> pair[1]) & 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean separated(int mask, int[][] pairIndexes) {
+        for (int[] pair : pairIndexes) {
+            if (((mask >> pair[0]) & 1) == ((mask >> pair[1]) & 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 수동용: apart 쌍이 블루·레드로 갈렸는지 본다. */
+    private static boolean separated(Slot[] blue, Set<TogetherPair> apart) {
+        for (TogetherPair pair : apart) {
+            boolean firstBlue = false;
+            boolean secondBlue = false;
+            for (Slot slot : blue) {
+                firstBlue |= slot.playerId() == pair.first();
+                secondBlue |= slot.playerId() == pair.second();
+            }
+            if (firstBlue == secondBlue) {
                 return false;
             }
         }

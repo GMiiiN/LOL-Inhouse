@@ -3,6 +3,7 @@ import { apiRequest } from './client'
 import type {
   ChampionStats,
   DuelDetail,
+  Duos,
   Home,
   Period,
   PlayerList,
@@ -67,6 +68,8 @@ export const getRankings = (query: RankingQuery = {}) =>
 
 export const getChampionStats = (period: Period = {}) =>
   apiRequest<ChampionStats>(`/api/champion-stats${toQueryString(periodParams(period))}`)
+
+export const getDuos = (period: Period = {}) => apiRequest<Duos>(`/api/duos${toQueryString(periodParams(period))}`)
 
 export const getHome = () => apiRequest<Home>('/api/home')
 

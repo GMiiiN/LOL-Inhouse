@@ -60,13 +60,14 @@ public class RecordService {
      */
     @Transactional(readOnly = true)
     public RecordPageResponse page(RecordFilter filter, LocalDate before, int limit) {
-        LocalDate to = filter.to();
-        if (before != null && (to == null || to.isAfter(before.minusDays(1)))) {
-            to = before.minusDays(1);
-        }
-        List<SetRow> rows = reader.setsInPeriod(filter.from(), to);
-
-        Set<Long> matching = matchingSetIds(filter, rows);
+        // 합계는 커서와 무관해야 하므로 필터 전체를 읽고, 커서(before)는 메모리에서 자른다(쿼리 수는 그대로).
+        List<SetRow> allRows = reader.setsInPeriod(filter.from(), filter.to());
+        Set<Long> matching = matchingSetIds(filter, allRows);
+        RecordPageResponse.Totals totals = new RecordPageResponse.Totals(
+                (int) allRows.stream().filter(r -> matching.contains(r.setId())).map(SetRow::duelId).distinct().count(),
+                matching.size());
+        List<SetRow> rows = before == null ? allRows
+                : allRows.stream().filter(r -> r.startDate().isBefore(before)).toList();
         Map<Long, List<SetRow>> rowsBySession = new LinkedHashMap<>();
         for (SetRow row : rows) {
             rowsBySession.computeIfAbsent(row.sessionId(), id -> new ArrayList<>()).add(row);
@@ -89,7 +90,7 @@ public class RecordService {
             blocks.add(new SessionBlock(sessionRows.get(0).sessionId(), sessionRows.get(0).startDate(),
                     duelBlocks(sessionRows, matching, views)));
         }
-        return new RecordPageResponse(blocks, nextBefore);
+        return new RecordPageResponse(blocks, nextBefore, totals);
     }
 
     @Transactional(readOnly = true)

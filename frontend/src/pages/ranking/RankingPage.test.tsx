@@ -44,6 +44,12 @@ describe('RankingPage', () => {
     expect(screen.getByText(/5세트 미만은 순위 없이 기록만 보여요/)).toBeInTheDocument()
   })
 
+  it('화면 이름이 랭킹이 아니라 승률이다', async () => {
+    setup()
+    expect(await screen.findByRole('heading', { level: 1, name: '승률' })).toBeInTheDocument()
+    expect(screen.queryByText('랭킹')).not.toBeInTheDocument()
+  })
+
   it('포지션 탭을 누르면 그 포지션으로 다시 조회한다', async () => {
     const { calls } = setup()
     await screen.findByText('가나')

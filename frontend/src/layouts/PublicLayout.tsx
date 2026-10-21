@@ -11,7 +11,7 @@ export function PublicLayout() {
         </Link>
         <nav className="app-nav" aria-label="공개 메뉴">
           <NavLink to="/" end>홈</NavLink>
-          <NavLink to="/ranking">랭킹</NavLink>
+          <NavLink to="/ranking">승률</NavLink>
           <NavLink to="/players">선수</NavLink>
           <NavLink to="/champions">챔피언</NavLink>
           <NavLink to="/records">내전 기록</NavLink>

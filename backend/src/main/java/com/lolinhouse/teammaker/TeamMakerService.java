@@ -82,14 +82,15 @@ public class TeamMakerService {
         }
         requireNoNulls(ids);
         requireDistinct(ids);
-        Set<TogetherPair> together = parsePairs(request.together(), new HashSet<>(ids));
+        Set<TogetherPair> together = parsePairs(request.together(), new HashSet<>(ids), "같은 팀");
+        Set<TogetherPair> apart = parseApart(request.apart(), new HashSet<>(ids), together);
 
         Map<Long, Position> fixedLanes = parseFixedLanes(request.fixedLanes(), new HashSet<>(ids));
 
         boolean fixed = !fixedLanes.isEmpty();
         return compute(ids, snapshot -> {
             List<TeamMakerPlayer> ordered = ids.stream().map(snapshot.players()::get).toList();
-            return engine.auto(ordered, together, snapshot.table(), fixedLanes);
+            return engine.auto(ordered, together, apart, snapshot.table(), fixedLanes);
         }, fixed ? TierTeamErrorCodes.TEAM_FIXED_LANE_BLOCKED : TierTeamErrorCodes.TEAM_NO_VALID_SPLIT,
                 fixed ? "라인 고정 때문에 가능한 조합이 없어요. 고정한 라인 때문에 다른 사람들이 갈 라인이 모자라요. 고정을 하나씩 풀어 보세요."
                         : "가능한 조합이 없어요. 고른 사람들의 라인이 겹쳐서 양 팀 모두 5개 라인을 채울 수 없거나, 같은 팀 조건 때문에 막혀요.");
@@ -109,7 +110,8 @@ public class TeamMakerService {
             all.addAll(pair);
         }
         requireDistinct(all);
-        Set<TogetherPair> together = parsePairs(request.together(), new HashSet<>(all));
+        Set<TogetherPair> together = parsePairs(request.together(), new HashSet<>(all), "같은 팀");
+        Set<TogetherPair> apart = parseApart(request.apart(), new HashSet<>(all), together);
 
         return compute(all, snapshot -> {
             Map<Position, List<TeamMakerPlayer>> resolved = new EnumMap<>(Position.class);
@@ -126,7 +128,7 @@ public class TeamMakerService {
                 }
                 resolved.put(position, pair);
             }
-            return engine.manual(resolved, together, snapshot.table());
+            return engine.manual(resolved, together, apart, snapshot.table());
         }, TierTeamErrorCodes.TEAM_PAIR_UNSATISFIABLE,
                 "같은 팀 조건을 만족하는 조합이 없어요. 같은 라인의 두 사람은 같은 팀이 될 수 없어요.");
     }
@@ -211,26 +213,38 @@ public class TeamMakerService {
         }
     }
 
-    /** 쌍 검증: 최대 5쌍, 각 쌍은 서로 다른 참가자 2명. 순서만 다른 같은 쌍은 하나로 합친다. */
-    private static Set<TogetherPair> parsePairs(List<List<Long>> raw, Set<Long> participants) {
+    /** apart 쌍 검증: together와 같은 규칙에 더해, 같은 쌍이 together에도 있으면 400 TEAM_PAIR_INVALID. */
+    private static Set<TogetherPair> parseApart(List<List<Long>> raw, Set<Long> participants,
+            Set<TogetherPair> together) {
+        Set<TogetherPair> apart = parsePairs(raw, participants, "다른 팀");
+        for (TogetherPair pair : apart) {
+            if (together.contains(pair)) {
+                throw pairInvalid("같은 두 사람을 같은 팀 조건과 다른 팀 조건에 함께 넣을 수 없어요.");
+            }
+        }
+        return apart;
+    }
+
+    /** 쌍 검증: 최대 5쌍, 각 쌍은 서로 다른 참가자 2명. 순서만 다른 같은 쌍은 하나로 합친다. label은 오류 문구용. */
+    private static Set<TogetherPair> parsePairs(List<List<Long>> raw, Set<Long> participants, String label) {
         if (raw == null || raw.isEmpty()) {
             return Set.of();
         }
         if (raw.size() > MAX_TOGETHER_PAIRS) {
-            throw pairInvalid("같은 팀 조건은 최대 5쌍까지예요.");
+            throw pairInvalid(label + " 조건은 최대 5쌍까지예요.");
         }
         Set<TogetherPair> pairs = new LinkedHashSet<>();
         for (List<Long> pair : raw) {
             if (pair == null || pair.size() != 2 || pair.contains(null)) {
-                throw pairInvalid("같은 팀 조건은 두 사람씩 짝지어야 해요.");
+                throw pairInvalid(label + " 조건은 두 사람씩 짝지어야 해요.");
             }
             long a = pair.get(0);
             long b = pair.get(1);
             if (a == b) {
-                throw pairInvalid("자기 자신과는 같은 팀으로 묶을 수 없어요.");
+                throw pairInvalid("자기 자신과는 " + label + " 조건으로 묶을 수 없어요.");
             }
             if (!participants.contains(a) || !participants.contains(b)) {
-                throw pairInvalid("같은 팀 조건에 참가자가 아닌 사람이 있어요.");
+                throw pairInvalid(label + " 조건에 참가자가 아닌 사람이 있어요.");
             }
             pairs.add(new TogetherPair(a, b));
         }

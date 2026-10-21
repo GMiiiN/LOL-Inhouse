@@ -1,11 +1,13 @@
 // 기록 필터: 기간(from~to) · 선수 · 챔피언 · 챔피언 범위. 값은 모두 URL 쿼리(player, champion, championScope)에 저장된다.
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getPlayers } from '../../api/public'
 import type { ChampionScope } from '../../api/publicTypes'
 import { publicPlayersKey } from '../../api/queryKeys'
 import { PeriodFilter } from '../../components/stats/PeriodFilter'
 import { usePublicChampions } from '../../components/stats/useChampionCatalog'
+import { matchesChampion } from '../../lib/hangulSearch'
 import '../../styles/records.css'
 
 type RecordFiltersProps = {
@@ -20,6 +22,7 @@ export function RecordFilters({ player, champion, championScope, hasFilter, onCl
   const [, setSearchParams] = useSearchParams()
   const players = useQuery({ queryKey: publicPlayersKey({}), queryFn: () => getPlayers({}) })
   const champions = usePublicChampions()
+  const [championQuery, setChampionQuery] = useState('')
 
   // 값이 비면 그 파라미터를 지운다. 이력은 쌓지 않는다.
   // 선수나 챔피언을 지우면 범위 선택기가 사라지므로 숨은 championScope도 함께 지운다.
@@ -37,6 +40,8 @@ export function RecordFilters({ player, champion, championScope, hasFilter, onCl
 
   const playerList = players.data?.players ?? []
   const championList = champions.data?.champions ?? []
+  // 검색어에 맞는 챔피언만 보이되 이미 고른 챔피언은 항상 남긴다
+  const shownChampions = championList.filter((c) => c.id === champion || matchesChampion(championQuery, c.name, c.id))
 
   return (
     <div className="record-filters" role="search" aria-label="기록 필터">
@@ -53,12 +58,19 @@ export function RecordFilters({ player, champion, championScope, hasFilter, onCl
           ))}
         </select>
       </label>
+      <input
+        type="search"
+        aria-label="챔피언 검색"
+        placeholder="챔피언 검색 (초성 가능)"
+        value={championQuery}
+        onChange={(e) => setChampionQuery(e.target.value)}
+      />
       <label>
         챔피언
         <select value={champion ?? ''} onChange={(e) => setParam('champion', e.target.value)}>
           <option value="">전체</option>
           {champion && !championList.some((c) => c.id === champion) && <option value={champion}>{champion}</option>}
-          {championList.map((c) => (
+          {shownChampions.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>

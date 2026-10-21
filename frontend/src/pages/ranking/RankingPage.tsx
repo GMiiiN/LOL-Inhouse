@@ -51,7 +51,7 @@ export function RankingPage() {
   return (
     <section>
       <div className="stats-bar">
-        <h1>랭킹</h1>
+        <h1>승률</h1>
         <PeriodFilter />
       </div>
       <div className="stats-bar">
@@ -80,7 +80,7 @@ export function RankingPage() {
       {rankings.data && entries.length === 0 && <p className="stat-empty-box">아직 기록된 경기가 없어요.</p>}
       {entries.length > 0 && (
         <div className="stat-table-scroll">
-          <table className="stat-table" aria-label="랭킹">
+          <table className="stat-table" aria-label="승률">
             <thead>
               <tr>
                 <th className="num">순위</th>
