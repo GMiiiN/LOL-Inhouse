@@ -92,6 +92,14 @@ class GeminiScoreboardExtractorTest {
     }
 
     @Test
+    void 프롬프트와_스키마가_닉네임_번역과_음역을_금지한다() {
+        assertThat(GeminiScoreboardExtractor.PROMPT).contains("일본어 가나·한자").contains("번역·음역·한글 변환")
+                .contains("…");
+        assertThat(GeminiScoreboardExtractor.schema().toString())
+                .contains(GeminiScoreboardExtractor.NICKNAME_DESCRIPTION);
+    }
+
+    @Test
     void sendsModelPathSchemaAndZeroTemperatureThenParsesTheStructuredAnswer() throws Exception {
         responseBody = geminiEnvelope(validJson());
 

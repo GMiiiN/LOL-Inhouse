@@ -1,7 +1,7 @@
 // 선수 관리 화면 테스트: 편집 모드, 편집기 검증·저장·409 문구, 삭제 두 번 확인, 미등록 목록, 캐시 무효화
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PLAYERS_KEY, PLAYER_PROFILES_KEY, PUBLIC_KEY, TIER_LIST_KEY } from '../../../api/queryKeys'
 import { jsonResponse, mockFetch, noContent, problemResponse, type MockRequest } from '../../../test/mockFetch'
 import { renderApp } from '../../../test/renderApp'
@@ -257,5 +257,72 @@ describe('PlayerTierAdminPage', () => {
 
     await screen.findByText('홍길동')
     expect(screen.queryByText(/미등록 선수 \d+명/)).not.toBeInTheDocument()
+  })
+
+  describe('미등록 선수 합치기', () => {
+    afterEach(() => vi.restoreAllMocks())
+
+    async function openMerge(user: ReturnType<typeof userEvent.setup>) {
+      const summary = await screen.findByText('미등록 선수 1명')
+      await user.click(summary)
+      await user.click(screen.getByRole('button', { name: '기존 선수와 합치기' }))
+      await user.selectOptions(screen.getByLabelText('합칠 선수'), '1')
+    }
+
+    it('확인을 취소하면 호출하지 않는다', async () => {
+      const user = userEvent.setup()
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      const { calls } = mockFetch(baseRoutes)
+      renderApp('/admin/players')
+
+      await openMerge(user)
+      await user.click(screen.getByRole('button', { name: '합치기' }))
+
+      expect(confirm).toHaveBeenCalledWith('‘낯선닉’의 기록을 ‘홍길동’에게 합칠까요? 되돌릴 수 없어요.')
+      expect(calls.some((c) => c.method === 'POST')).toBe(false)
+    })
+
+    it('확인하면 POST하고 목록·티어리스트·등록 화면·공개 조회를 새로 불러온다', async () => {
+      const user = userEvent.setup()
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      const { calls } = mockFetch({
+        ...baseRoutes,
+        'POST /api/admin/players/3/merge': () => jsonResponse(200, hong),
+      })
+      const { client } = renderApp('/admin/players')
+      const invalidated: unknown[] = []
+      const original = client.invalidateQueries.bind(client)
+      client.invalidateQueries = ((filters) => {
+        invalidated.push((filters as { queryKey: unknown }).queryKey)
+        return original(filters)
+      }) as typeof client.invalidateQueries
+
+      await openMerge(user)
+      await user.click(screen.getByRole('button', { name: '합치기' }))
+
+      const post = await waitForCall(() => calls.find((c) => c.method === 'POST'))
+      expect(JSON.parse(post.body ?? '')).toEqual({ targetId: 1 })
+      await waitFor(() => {
+        expect(invalidated).toContainEqual(PLAYER_PROFILES_KEY)
+        expect(invalidated).toContainEqual(TIER_LIST_KEY)
+        expect(invalidated).toContainEqual(PLAYERS_KEY)
+        expect(invalidated).toContainEqual(PUBLIC_KEY)
+      })
+    })
+
+    it('409 PLAYER_MERGE_CONFLICT 문구를 보여 준다', async () => {
+      const user = userEvent.setup()
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      mockFetch({
+        ...baseRoutes,
+        'POST /api/admin/players/3/merge': () => problemResponse(409, 'PLAYER_MERGE_CONFLICT'),
+      })
+      renderApp('/admin/players')
+
+      await openMerge(user)
+      await user.click(screen.getByRole('button', { name: '합치기' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('같은 세트에 함께 나와서 합칠 수 없어요')
+    })
   })
 })

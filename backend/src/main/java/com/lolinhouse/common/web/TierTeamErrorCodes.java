@@ -17,6 +17,12 @@ public final class TierTeamErrorCodes {
     public static final String DUPLICATE_REAL_NAME = "DUPLICATE_REAL_NAME";
     /** 409 세트 기록이 있는 선수 삭제 */
     public static final String PLAYER_HAS_RECORDS = "PLAYER_HAS_RECORDS";
+    /** 400 합치기 대상이 등록 선수 */
+    public static final String MERGE_SOURCE_REGISTERED = "MERGE_SOURCE_REGISTERED";
+    /** 400 자기 자신과 합치기 */
+    public static final String MERGE_SAME_PLAYER = "MERGE_SAME_PLAYER";
+    /** 409 두 선수가 같은 세트에 함께 있음 */
+    public static final String PLAYER_MERGE_CONFLICT = "PLAYER_MERGE_CONFLICT";
     /** 400 점수표 칸 누락·범위 밖·정수 아님 */
     public static final String INVALID_SCORE_TABLE = "INVALID_SCORE_TABLE";
     /** 400 자동 모드 인원이 10명이 아님(count 포함) */

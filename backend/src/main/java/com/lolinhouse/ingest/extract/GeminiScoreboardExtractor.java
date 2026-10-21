@@ -33,7 +33,8 @@ public final class GeminiScoreboardExtractor implements ScoreboardExtractor, Aut
             top은 위쪽 팀, bottom은 아래쪽 팀이다. rows는 각 팀 화면 순서 그대로 5명이다.
             result는 화면 상단 승리/패배이며 위쪽 팀 결과다.
             date는 YYYY/MM/DD, duration은 경기 소요 시간 mm:ss이며 시각이 아니다.
-            nickname은 보이는 문자 그대로, 공백과 일본어·한자와 끝의 …도 유지하라.
+            nickname은 화면에 보이는 글자 그대로 옮겨 적어라. 일본어 가나·한자, 중국어, 영문, 숫자, 기호, 공백을
+            모두 유지하고, 번역·음역·한글 변환을 절대 하지 마라. 끝이 잘려 보이는 …도 그대로 둔다.
             kills,deaths,assists,cs,gold는 정수다. 쉼표는 제거하라.
             팀 kills,deaths,assists,gold는 팀 이름 옆에 표시된 합계다. 행을 더해서 대신 쓰지 마라.
             portraitBox는 챔피언 얼굴 초상화만 꼭 맞게 둘러싸라. 레벨·룬·아이템을 제외하라.
@@ -43,6 +44,9 @@ public final class GeminiScoreboardExtractor implements ScoreboardExtractor, Aut
             모든 박스는 원본 전체 이미지 기준 [ymin,xmin,ymax,xmax], 0~1000 정규화 정수다.
             이미지 크기와 잘린 여백이 달라져도 실제 위치를 찾아라. 챔피언 이름은 추측하지 마라.
             """;
+
+    static final String NICKNAME_DESCRIPTION =
+            "화면에 보이는 글자 그대로(일본어·한자·영문·숫자·기호 포함). 번역·음역·한글 변환 금지. 잘린 …도 유지";
 
     private final Client client;
     private final String model;
@@ -111,7 +115,7 @@ public final class GeminiScoreboardExtractor implements ScoreboardExtractor, Aut
     /** 좌표는 공식 문서의 [ymin,xmin,ymax,xmax], 0~1000이다. */
     static Map<String, Object> schema() {
         var box = array(Map.of("type", "integer", "minimum", 0, "maximum", 1000), 4);
-        var row = object(Map.of("nickname", Map.of("type", "string"), "kills", integer(), "deaths", integer(),
+        var row = object(Map.of("nickname", Map.of("type", "string", "description", NICKNAME_DESCRIPTION), "kills", integer(), "deaths", integer(),
                 "assists", integer(), "cs", integer(), "gold", integer(), "portraitBox", box));
         var team = object(Map.of("kills", integer(), "deaths", integer(), "assists", integer(), "gold", integer(),
                 "rows", array(row, 5), "banBoxes", array(box, 5)));

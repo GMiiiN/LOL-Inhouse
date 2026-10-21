@@ -119,6 +119,42 @@ public class PlayerProfileService {
         players.flush();
     }
 
+    /**
+     * 미등록 선수(source)의 세트 기록·별칭을 다른 선수(target)에게 옮기고 source를 지운다. 한 트랜잭션.
+     * 잠금 순서: score_setting → 두 선수 행(id 오름차순, 교착 방지). 같은 세트에 둘 다 있으면 409.
+     * 별칭 개수 상한은 적용하지 않는다(실제 닉네임 기록 보존이 우선). source의 라인 티어는 버린다(미등록은 보통 없다).
+     */
+    @Transactional
+    public PlayerProfileResponse merge(Long sourceId, Long targetId) {
+        if (sourceId.equals(targetId)) {
+            throw ApiException.badRequest(TierTeamErrorCodes.MERGE_SAME_PLAYER, "같은 선수끼리는 합칠 수 없습니다.");
+        }
+        scoreSettings.findForUpdate();
+        Player first = lockPlayer(Math.min(sourceId, targetId));
+        Player second = lockPlayer(Math.max(sourceId, targetId));
+        Player source = sourceId < targetId ? first : second;
+        if (source.isRegistered()) {
+            throw ApiException.badRequest(TierTeamErrorCodes.MERGE_SOURCE_REGISTERED, "등록된 선수는 합쳐질 수 없습니다.");
+        }
+        Integer shared = jdbc.queryForObject("select count(*) from game_set_player a join game_set_player b"
+                + " on a.game_set_id = b.game_set_id where a.player_id = ? and b.player_id = ?", Integer.class,
+                sourceId, targetId);
+        if (shared != null && shared > 0) {
+            throw ApiException.conflict(TierTeamErrorCodes.PLAYER_MERGE_CONFLICT,
+                    "두 선수가 같은 세트에 함께 있어 합칠 수 없습니다.");
+        }
+        jdbc.update("update game_set_player set player_id = ? where player_id = ?", targetId, sourceId);
+        jdbc.update("update player_alias set player_id = ? where player_id = ?", targetId, sourceId);
+        jdbc.update("delete from player_lane_tier where player_id = ?", sourceId);
+        jdbc.update("delete from player where id = ?", sourceId);
+        return load(targetId);
+    }
+
+    private Player lockPlayer(Long id) {
+        return players.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("PLAYER_NOT_FOUND", "선수를 찾을 수 없습니다: " + id));
+    }
+
     /** 요청의 라인을 검사해 티어가 있는 라인만 모은다. 키가 없거나 값이 null이면 티어 없음. */
     private Map<Position, LaneTier> parseLanes(PlayerProfileRequest request) {
         Map<Position, LaneTier> wanted = new EnumMap<>(Position.class);
