@@ -9,7 +9,8 @@ import '../../styles/stats.css'
 
 const ALL_TIME = {}
 
-function DuoList({ title, entries }: { title: string; entries: DuoEntry[] }) {
+// tone: 1위 카드 테두리 강조 색(최고 = 노랑, 최악 = 빨강)
+function DuoList({ title, entries, tone }: { title: string; entries: DuoEntry[]; tone: 'best' | 'worst' }) {
   return (
     <section aria-label={title}>
       <h2>{title}</h2>
@@ -17,8 +18,11 @@ function DuoList({ title, entries }: { title: string; entries: DuoEntry[] }) {
         <p className="stat-empty">아직 없어요.</p>
       ) : (
         <ol className="duo-list">
-          {entries.map((duo) => (
-            <li key={`${duo.players[0].playerId}-${duo.players[1].playerId}`} className="duo-item">
+          {entries.map((duo, index) => (
+            <li
+              key={`${duo.players[0].playerId}-${duo.players[1].playerId}`}
+              className={`duo-item${index === 0 ? ` duo-top duo-top-${tone}` : ''}`}
+            >
               <div className="duo-names">{duo.players[0].displayName} + {duo.players[1].displayName}</div>
               <div className="duo-record">
                 {duo.sets}세트 · {duo.wins}승 {duo.losses}패 · <WinRate winRate={duo.winRate} sets={duo.sets} />
@@ -43,8 +47,8 @@ export function DuoColumn() {
       {data && (data.best.length > 0 || data.worst.length > 0) && (
         <>
           <p className="stats-help">같은 팀으로 함께 {data.minSets}세트 이상 뛴 두 사람만 보여요.</p>
-          <DuoList title="최고의 듀오" entries={data.best} />
-          <DuoList title="최악의 듀오" entries={data.worst} />
+          <DuoList title="최고의 듀오" entries={data.best} tone="best" />
+          <DuoList title="최악의 듀오" entries={data.worst} tone="worst" />
         </>
       )}
     </aside>

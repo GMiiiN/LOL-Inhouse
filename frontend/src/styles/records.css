@@ -59,8 +59,8 @@
 .sb-row { display: grid; grid-template-columns: 1fr 72px 1fr; align-items: center; border-bottom: 1px solid var(--line); }
 .sb-row:last-child { border-bottom: 0; }
 .sb-cell { display: flex; align-items: center; gap: 10px; padding: 6px 12px; }
-.sb-blue { background: var(--blue-soft); justify-content: flex-start; }
-.sb-red { background: var(--red-soft); justify-content: flex-end; }
+.sb-blue { background: var(--blue-soft); justify-content: flex-end; }
+.sb-red { background: var(--red-soft); justify-content: flex-start; }
 .sb-pos { text-align: center; color: var(--muted); font-size: 14px; }
 .sb-kda, .sb-num { font-family: var(--f-num); font-size: 14px; }
 .sb-num { color: var(--muted); }
@@ -68,8 +68,8 @@
 .sb-name:hover { color: var(--accent); }
 .sb-unregistered { color: var(--faint); font-weight: 400; font-size: 13px; }
 
-.ban-strip { margin-top: 10px; display: grid; gap: 8px; }
-.ban-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ban-strip { margin-top: 10px; display: grid; justify-items: center; gap: 8px; }
+.ban-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
 .ban-arrow { color: var(--faint); font-size: 16px; }
 .ban-item { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 8px; border-radius: 6px; border: 1px solid var(--line); }
 .ban-blue { background: var(--blue-soft); }

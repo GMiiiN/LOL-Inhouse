@@ -95,6 +95,10 @@ describe('HomePage', () => {
     expect(within(best).getByText(/5세트 · 5승 0패/)).toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: '최악의 듀오' })).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByText(/3세트 이상 뛴 두 사람만/)).toBeInTheDocument()
+    const bestItems = within(best).getAllByRole('listitem')
+    expect(bestItems[0]).toHaveClass('duo-top-best')
+    expect(bestItems[1]).not.toHaveClass('duo-top')
+    expect(within(screen.getByRole('region', { name: '최악의 듀오' })).getAllByRole('listitem')[0]).toHaveClass('duo-top-worst')
   })
 
   it('듀오가 없으면 빈 상태를 보여 준다', async () => {
