@@ -31,6 +31,8 @@
 .set-row-caret { color: var(--muted); width: 12px; }
 .set-row-time { color: var(--muted); font-family: var(--f-num); }
 .set-row-picks { display: inline-flex; gap: 3px; }
+.set-row-pick { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; width: 64px; }
+.set-row-pick-name { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; }
 .set-row-kills { font-family: var(--f-num); }
 .set-row-kills .team-blue { color: var(--blue); }
 .set-row-kills .team-red { color: var(--red); }

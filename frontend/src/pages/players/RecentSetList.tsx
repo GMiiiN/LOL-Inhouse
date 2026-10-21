@@ -9,7 +9,7 @@ export function RecentSetList({ sets }: { sets: SetView[] }) {
       {sets.map((set) => (
         <div key={set.setId} className="stat-recent-item">
           <span className="stat-recent-date">{set.sessionDate}</span>
-          <SetRow set={set} showDuelLink />
+          <SetRow set={set} showDuelLink showNames />
         </div>
       ))}
     </div>

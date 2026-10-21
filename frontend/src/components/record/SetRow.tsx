@@ -2,7 +2,7 @@
 // 기록 목록, 대결 상세, 홈, 프로필 최근 경기가 함께 쓴다. 블루가 항상 왼쪽이다.
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { SetView } from '../../api/publicTypes'
+import type { PlayerLine, SetView } from '../../api/publicTypes'
 import { formatDuration } from '../../pages/stats/format'
 import { ChampionIcon } from '../stats/ChampionIcon'
 import { TeamLabel } from '../stats/TeamLabel'
@@ -16,9 +16,10 @@ type SetRowProps = {
   set: SetView
   defaultExpanded?: boolean // 기본 접힘
   showDuelLink?: boolean // 홈·프로필처럼 대결 맥락이 없는 곳에서 "대결 N" 링크를 함께 보여 준다
+  showNames?: boolean // 접힌 줄에서도 챔피언 아이콘 아래에 선수 이름을 보여 준다(홈·프로필 최근 경기)
 }
 
-export function SetRow({ set, defaultExpanded = false, showDuelLink = false }: SetRowProps) {
+export function SetRow({ set, defaultExpanded = false, showDuelLink = false, showNames = false }: SetRowProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const { blue, red } = sidesOf(set)
   const team1 = set.teams[0]
@@ -46,7 +47,7 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false }: S
         <span className="set-row-time">{formatDuration(set.durationSec)}</span>
         <span className="set-row-picks set-row-picks-blue" data-testid="picks-blue">
           {blue.players.map((p) => (
-            <ChampionIcon key={p.position} championKey={p.championKey} size="sm" />
+            <Pick key={p.position} line={p} showName={showNames} />
           ))}
         </span>
         <span className="set-row-kills" aria-label="팀 킬 블루 대 레드">
@@ -55,7 +56,7 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false }: S
         </span>
         <span className="set-row-picks set-row-picks-red" data-testid="picks-red">
           {red.players.map((p) => (
-            <ChampionIcon key={p.position} championKey={p.championKey} size="sm" />
+            <Pick key={p.position} line={p} showName={showNames} />
           ))}
         </span>
         {showDuelLink && (
@@ -75,5 +76,15 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false }: S
         </div>
       )}
     </div>
+  )
+}
+
+function Pick({ line, showName }: { line: PlayerLine; showName: boolean }) {
+  if (!showName) return <ChampionIcon championKey={line.championKey} size="sm" />
+  return (
+    <span className="set-row-pick" title={line.displayName}>
+      <ChampionIcon championKey={line.championKey} size="sm" />
+      <span className="set-row-pick-name">{line.displayName}</span>
+    </span>
   )
 }

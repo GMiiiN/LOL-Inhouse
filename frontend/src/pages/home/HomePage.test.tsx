@@ -108,4 +108,12 @@ describe('HomePage', () => {
     expect(await screen.findAllByRole('link', { name: '세트 상세' })).toHaveLength(3)
     expect(screen.getByRole('link', { name: '내전 기록 더 보기' })).toHaveAttribute('href', '/records')
   })
+
+  it('최근 경기 접힌 줄에 참여한 선수 이름이 챔피언 아래 보인다', async () => {
+    setup({ recentSets: [set], topPicksByPosition: none })
+    await screen.findByRole('link', { name: '세트 상세' })
+    const names = set.teams.flatMap((t) => t.players.map((p) => p.displayName))
+    expect(document.querySelectorAll('.set-row-pick-name')).toHaveLength(names.length)
+    for (const name of names) expect(screen.getAllByText(name).length).toBeGreaterThan(0)
+  })
 })
