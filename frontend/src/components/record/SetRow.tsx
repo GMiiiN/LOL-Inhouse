@@ -25,10 +25,29 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false, sho
   const team1 = set.teams[0]
   const winnerName = set.winnerTeam === 'TEAM1' ? 'A팀' : 'B팀'
   const panelId = `set-row-panel-${set.setId}`
+  // 양 팀 픽과 킬. 이름을 함께 보일 때는 줄 폭이 넉넉하면 한 줄, 좁으면 아래 줄로 내린다(records.css 컨테이너 쿼리)
+  const lineup = (
+    <>
+      <span className="set-row-picks set-row-picks-blue" data-testid="picks-blue">
+        {blue.players.map((p) => (
+          <Pick key={p.position} line={p} showName={showNames} />
+        ))}
+      </span>
+      <span className="set-row-kills" aria-label="팀 킬 블루 대 레드">
+        <span className="team-blue">{blue.displayed.kills}</span> :{' '}
+        <span className="team-red">{red.displayed.kills}</span>
+      </span>
+      <span className="set-row-picks set-row-picks-red" data-testid="picks-red">
+        {red.players.map((p) => (
+          <Pick key={p.position} line={p} showName={showNames} />
+        ))}
+      </span>
+    </>
+  )
 
   return (
     <div className={`set-row${expanded ? ' open' : ''}`}>
-      <div className="set-row-head">
+      <div className={`set-row-head${showNames ? ' with-names' : ''}`}>
         <button
           type="button"
           className="set-row-toggle"
@@ -45,20 +64,7 @@ export function SetRow({ set, defaultExpanded = false, showDuelLink = false, sho
         <TeamLabel team="TEAM1" side={team1.side} />
         <span className="wtag">{winnerName} 승</span>
         <span className="set-row-time">{formatDuration(set.durationSec)}</span>
-        <span className="set-row-picks set-row-picks-blue" data-testid="picks-blue">
-          {blue.players.map((p) => (
-            <Pick key={p.position} line={p} showName={showNames} />
-          ))}
-        </span>
-        <span className="set-row-kills" aria-label="팀 킬 블루 대 레드">
-          <span className="team-blue">{blue.displayed.kills}</span> :{' '}
-          <span className="team-red">{red.displayed.kills}</span>
-        </span>
-        <span className="set-row-picks set-row-picks-red" data-testid="picks-red">
-          {red.players.map((p) => (
-            <Pick key={p.position} line={p} showName={showNames} />
-          ))}
-        </span>
+        {showNames ? <div className="set-row-lineup">{lineup}</div> : lineup}
         {showDuelLink && (
           <Link className="set-row-link" to={`/duels/${set.duelId}`}>
             대결 {set.duelSeq}
