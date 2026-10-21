@@ -103,4 +103,21 @@ class SetFingerprintTest {
                     .hasMessageContaining("mm:ss");
         }
     }
+
+    @Test
+    void 경기_시간을_모르면_시간_자리에_물음표를_넣고_팀_순서와_무관하다() {
+        SetFingerprint a = SetFingerprint.ofUnknownDuration(SAMPLE1_DATE, SAMPLE1_TOP, SAMPLE1_BOTTOM);
+        SetFingerprint b = SetFingerprint.ofUnknownDuration(SAMPLE1_DATE, SAMPLE1_BOTTOM, SAMPLE1_TOP);
+
+        assertThat(a.canonical()).isEqualTo("2026-10-11|?|8:29846|26:39852");
+        assertThat(b).isEqualTo(a);
+    }
+
+    @Test
+    void 시간을_모르는_지문은_초가_있는_지문과_절대_같지_않다() {
+        SetFingerprint known = SetFingerprint.of(SAMPLE1_DATE, SAMPLE1_SECONDS, SAMPLE1_TOP, SAMPLE1_BOTTOM);
+        SetFingerprint unknown = SetFingerprint.ofUnknownDuration(SAMPLE1_DATE, SAMPLE1_TOP, SAMPLE1_BOTTOM);
+
+        assertThat(unknown).isNotEqualTo(known);
+    }
 }

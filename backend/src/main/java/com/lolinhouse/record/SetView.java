@@ -20,7 +20,7 @@ public record SetView(
         long sessionId,
         LocalDate sessionDate,
         LocalDate shotDate,
-        int durationSec,
+        Integer durationSec,
         Side team1Side,
         DuelTeam winnerTeam,
         List<TeamView> teams,

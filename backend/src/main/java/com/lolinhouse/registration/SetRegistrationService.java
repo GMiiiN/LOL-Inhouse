@@ -113,6 +113,44 @@ public class SetRegistrationService {
         }
     }
 
+    /**
+     * 결과창 이미지 없이 세트를 저장한다(ADR 014). 잠금 순서(묶음 → 대결)·평가·오류 변환은 register와 같다.
+     * 추출 작업·이미지가 없어 image_hash/image_key는 NULL이다.
+     */
+    public SetRegistrationResponse importSet(Long duelId, SetImportRequest importRequest) {
+        SetRegistrationRequest request = importRequest.toRegistration();
+        CatalogSnapshot catalog = requireCatalog();
+        Duel original = duelRepository.findById(duelId).orElseThrow(() -> duelNotFound(duelId));
+        AtomicReference<String> fingerprint = new AtomicReference<>();
+        try {
+            return transactionTemplate.execute(
+                    status -> doImport(original, request, importRequest.durationSec(), catalog, fingerprint));
+        } catch (DataIntegrityViolationException e) {
+            throw translate(e, fingerprint.get());
+        }
+    }
+
+    private SetRegistrationResponse doImport(Duel original, SetRegistrationRequest request, Integer durationSec,
+            CatalogSnapshot catalog, AtomicReference<String> fingerprint) {
+        sessionRepository.findByIdForUpdate(original.sessionId()).orElseThrow(() -> duelNotFound(original.id()));
+        duelRepository.findByIdForUpdate(original.id()).orElseThrow(() -> duelNotFound(original.id()));
+        Evaluation evaluation = evaluator.evaluateImport(request, durationSec, contextService.stateFor(original),
+                contextService.directory(), catalog, this::findDuplicate);
+        fingerprint.set(evaluation.fingerprint());
+        if (evaluation.duplicateSet() != null) {
+            throw duplicateSet(evaluation.duplicateSet());
+        }
+        if (!evaluation.errors().isEmpty()) {
+            throw new SetRulesViolatedException(evaluation.errors(), evaluation.warnings());
+        }
+        Long[] blueIds = request.top().rows().stream().map(RowInput::playerId).toArray(Long[]::new);
+        Long[] redIds = request.bottom().rows().stream().map(RowInput::playerId).toArray(Long[]::new);
+        GameSet set = gameSetRepository.saveAndFlush(
+                buildSet(original.id(), request, evaluation, durationSec, null, null, blueIds, redIds));
+        return new SetRegistrationResponse(set.id(), original.id(), set.setNo(), evaluation.topTeam(),
+                evaluation.warnings(), List.of(), List.of());
+    }
+
     private SetRegistrationResponse doRegister(Duel original, SetRegistrationRequest request, CatalogSnapshot catalog,
             AtomicReference<String> fingerprint) {
         boolean newDuel = request.newDuel() != null;
@@ -157,7 +195,9 @@ public class SetRegistrationService {
         Long[] topIds = confirmPlayers(request.top(), createdPlayers, addedAliases);
         Long[] bottomIds = confirmPlayers(request.bottom(), createdPlayers, addedAliases);
 
-        GameSet set = buildSet(targetDuelId, request, evaluation, job, topIds, bottomIds);
+        GameSet set = buildSet(targetDuelId, request, evaluation,
+                SetFingerprint.parseDuration(request.duration().strip()), job.imageHash(), job.imageKey(), topIds,
+                bottomIds);
         set = gameSetRepository.saveAndFlush(set);
         job.linkGameSet(set.id());
         jobRepository.saveAndFlush(job);
@@ -185,16 +225,16 @@ public class SetRegistrationService {
         return ids;
     }
 
-    private GameSet buildSet(Long duelId, SetRegistrationRequest request, Evaluation evaluation, ExtractionJob job,
-            Long[] topIds, Long[] bottomIds) {
+    private GameSet buildSet(Long duelId, SetRegistrationRequest request, Evaluation evaluation, Integer durationSec,
+            String imageHash, String imageKey, Long[] topIds, Long[] bottomIds) {
         DuelTeam topTeam = evaluation.topTeam();
         DuelTeam bottomTeam = topTeam.other();
         TeamInput team1 = topTeam == DuelTeam.TEAM1 ? request.top() : request.bottom();
         TeamInput team2 = topTeam == DuelTeam.TEAM1 ? request.bottom() : request.top();
         DuelTeam winner = request.topResult() == TopResult.WIN ? topTeam : bottomTeam;
         GameSet set = GameSet.create(duelId, evaluation.setNo(), evaluation.team1Side(), winner, topTeam,
-                LocalDate.parse(request.shotDate().strip()), SetFingerprint.parseDuration(request.duration().strip()),
-                totals(team1), totals(team2), job.imageHash(), job.imageKey());
+                LocalDate.parse(request.shotDate().strip()), durationSec, totals(team1), totals(team2), imageHash,
+                imageKey);
         addPlayers(set, topTeam, request.top(), topIds);
         addPlayers(set, bottomTeam, request.bottom(), bottomIds);
         for (BanTurn turn : BanOrder.build(request.topSide(), request.top().bans(), request.bottom().bans())) {

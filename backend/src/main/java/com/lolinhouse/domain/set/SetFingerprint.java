@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
  */
 public record SetFingerprint(String canonical) {
 
+    private static final String UNKNOWN_DURATION = "?";
     private static final Pattern DURATION_PATTERN = Pattern.compile("([0-9]{2,3}):([0-9]{2})");
     private static final Comparator<TeamTotals> CANONICAL_ORDER =
             Comparator.comparingInt(TeamTotals::kills).thenComparingInt(TeamTotals::gold);
@@ -40,10 +41,25 @@ public record SetFingerprint(String canonical) {
         if (teamA == null || teamB == null) {
             throw new IllegalArgumentException("양 팀의 킬·골드 합계가 필요합니다.");
         }
+        return build(date, String.valueOf(durationSeconds), teamA, teamB);
+    }
+
+    /** 경기 시간을 모를 때(결과창 없이 가져온 기록): 시간 자리를 {@code ?}로 둔다. 숫자 형식과 겹치지 않아 기존 지문과 충돌하지 않는다. */
+    public static SetFingerprint ofUnknownDuration(LocalDate date, TeamTotals teamA, TeamTotals teamB) {
+        if (date == null) {
+            throw new IllegalArgumentException("결과창 날짜가 필요합니다.");
+        }
+        if (teamA == null || teamB == null) {
+            throw new IllegalArgumentException("양 팀의 킬·골드 합계가 필요합니다.");
+        }
+        return build(date, UNKNOWN_DURATION, teamA, teamB);
+    }
+
+    private static SetFingerprint build(LocalDate date, String durationText, TeamTotals teamA, TeamTotals teamB) {
         // 위쪽/아래쪽 팀 순서를 지우기 위해 킬 → 골드 순(숫자 비교)으로 작은 쪽을 앞에 둔다
         TeamTotals first = CANONICAL_ORDER.compare(teamA, teamB) <= 0 ? teamA : teamB;
         TeamTotals second = first == teamA ? teamB : teamA;
-        return new SetFingerprint(date + "|" + durationSeconds + "|" + format(first) + "|" + format(second));
+        return new SetFingerprint(date + "|" + durationText + "|" + format(first) + "|" + format(second));
     }
 
     /** "18:14" → 1094초. 분은 2~3자리, 초는 00~59. */

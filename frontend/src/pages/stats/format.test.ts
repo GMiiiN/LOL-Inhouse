@@ -7,6 +7,7 @@ describe('format', () => {
     expect(formatDuration(65)).toBe('01:05')
     expect(formatDuration(1925)).toBe('32:05')
     expect(formatDuration(3725)).toBe('62:05')
+    expect(formatDuration(null)).toBe(EM_DASH)
   })
 
   it('경기당 평균은 소수 1자리이고 0세트면 대시다', () => {

@@ -363,6 +363,15 @@ class SchemaConstraintTest {
     }
 
     @Test
+    void gameSetDurationMayBeNullButNotZero() {
+        long duel = duel();
+        insert("game_set", with(gameSetRow(duel, 1, "fp-null-duration"), "duration_sec", null));
+
+        assertThat(mysqlErrorOf(() -> insert("game_set", with(gameSetRow(duel, 2, "fp-neg"), "duration_sec", -5))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
     void gameSetSetNoMustBePositive() {
         long duel = duel();
 

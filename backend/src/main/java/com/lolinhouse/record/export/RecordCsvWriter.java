@@ -67,7 +67,7 @@ public final class RecordCsvWriter {
         cells.add(String.valueOf(set.setNo()));
         cells.add(String.valueOf(set.setId()));
         cells.add(text(set.shotDate() == null ? "" : set.shotDate().toString()));
-        cells.add(String.valueOf(set.durationSec()));
+        cells.add(set.durationSec() == null ? "" : String.valueOf(set.durationSec()));
         cells.add(text(teamLetter(set.winnerTeam())));
         cells.add(String.valueOf(p.playerId()));
         cells.add(text(name == null ? String.valueOf(p.playerId()) : name.displayName()));
