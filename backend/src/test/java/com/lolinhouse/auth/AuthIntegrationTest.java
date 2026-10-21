@@ -250,7 +250,7 @@ class AuthIntegrationTest {
 
     @Test
     void unlistedPathsAreDeniedForAnonymous() throws Exception {
-        mockMvc.perform(get("/api/players")).andExpect(status().isUnauthorized())
+        mockMvc.perform(get("/api/members")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
         mockMvc.perform(get("/")).andExpect(status().isUnauthorized());
     }
@@ -258,7 +258,7 @@ class AuthIntegrationTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void unlistedPathsAreDeniedEvenForAdmin() throws Exception {
-        mockMvc.perform(get("/api/players"))
+        mockMvc.perform(get("/api/members"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }

@@ -3,11 +3,19 @@ import type { RouteObject } from 'react-router-dom'
 import { AdminLayout } from './layouts/AdminLayout'
 import { PublicLayout } from './layouts/PublicLayout'
 import { LoginPage } from './pages/admin/LoginPage'
+import { ChampionStatsPage } from './pages/champions/ChampionStatsPage'
+import { DuelDetailPage } from './pages/duel/DuelDetailPage'
+import { HomePage } from './pages/home/HomePage'
 import { PlayerTierAdminPage } from './pages/admin/players/PlayerTierAdminPage'
 import { SessionDetailPage } from './pages/admin/SessionDetailPage'
 import { SessionsPage } from './pages/admin/SessionsPage'
 import { SetRegisterPage } from './pages/admin/register/SetRegisterPage'
 import { ScoreSettingsPage } from './pages/admin/score/ScoreSettingsPage'
+import { PlayerProfilePage } from './pages/players/PlayerProfilePage'
+import { PlayersPage } from './pages/players/PlayersPage'
+import { RankingPage } from './pages/ranking/RankingPage'
+import { RecordsPage } from './pages/records/RecordsPage'
+import { SetDetailPage } from './pages/set/SetDetailPage'
 import { TeamMakerPage } from './pages/team/TeamMakerPage'
 import { TierListPage } from './pages/tier/TierListPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
@@ -16,13 +24,14 @@ export const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
-      { path: '/', element: <PlaceholderPage title="홈" milestone="M5" /> },
-      { path: '/ranking', element: <PlaceholderPage title="랭킹" milestone="M5" /> },
-      { path: '/players', element: <PlaceholderPage title="선수" milestone="M5" /> },
-      { path: '/players/:playerId', element: <PlaceholderPage title="선수 프로필" milestone="M5" /> },
-      { path: '/records', element: <PlaceholderPage title="내전 기록" milestone="M5" /> },
-      { path: '/duels/:duelId', element: <PlaceholderPage title="대결 상세" milestone="M5" /> },
-      { path: '/sets/:setId', element: <PlaceholderPage title="세트 상세" milestone="M5" /> },
+      { path: '/', element: <HomePage /> },
+      { path: '/ranking', element: <RankingPage /> },
+      { path: '/players', element: <PlayersPage /> },
+      { path: '/players/:playerId', element: <PlayerProfilePage /> },
+      { path: '/champions', element: <ChampionStatsPage /> },
+      { path: '/records', element: <RecordsPage /> },
+      { path: '/duels/:duelId', element: <DuelDetailPage /> },
+      { path: '/sets/:setId', element: <SetDetailPage /> },
       { path: '/tiers', element: <TierListPage /> },
       { path: '/team-maker', element: <TeamMakerPage /> },
       { path: '/admin/login', element: <LoginPage /> },

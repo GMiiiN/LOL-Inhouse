@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listPlayers } from '../../../api/admin'
 import { ApiError } from '../../../api/client'
-import { PLAYERS_KEY, registrationContextKey, SESSIONS_KEY } from '../../../api/queryKeys'
+import { PLAYERS_KEY, PUBLIC_KEY, registrationContextKey, SESSIONS_KEY } from '../../../api/queryKeys'
 import { registerSet } from '../../../api/registration'
 import type {
   ChampionList,
@@ -108,6 +108,7 @@ export function ReviewStep({ duelId, draft, context, champions, imageUrl, chosen
         queryClient.invalidateQueries({ queryKey: registrationContextKey(duelId) }),
         queryClient.invalidateQueries({ queryKey: registrationContextKey(result.duelId) }),
         queryClient.invalidateQueries({ queryKey: SESSIONS_KEY }),
+        queryClient.invalidateQueries({ queryKey: PUBLIC_KEY }),
       ])
       onSaved(result)
     },

@@ -1,3 +1,5 @@
+import type { Period, RankingQuery, RecordsQuery } from './publicTypes'
+
 // TanStack Query 키 모음
 // 배열 앞부분이 같으면 한 번에 무효화할 수 있도록 ['admin', 종류, ...] 구조로 둔다.
 export const ME_KEY = ['admin', 'me'] as const
@@ -13,3 +15,14 @@ export const draftKey = (jobId: number) => ['admin', 'extractions', jobId, 'draf
 export const TIER_LIST_KEY = ['tier-list'] as const
 export const SCORE_TABLE_KEY = ['score-table'] as const
 export const PLAYER_PROFILES_KEY = ['admin', 'player-profiles'] as const
+// M5 공개 조회. 모두 ['public', ...]로 시작해 담당자가 기록을 바꾸면 ['public'] 하나로 무효화한다(로그아웃해도 지우지 않는다)
+export const PUBLIC_KEY = ['public'] as const
+export const recordsKey = (query: RecordsQuery) => ['public', 'records', query] as const
+export const duelKey = (duelId: number) => ['public', 'duel', duelId] as const
+export const setKey = (setId: number) => ['public', 'set', setId] as const
+export const publicPlayersKey = (period: Period) => ['public', 'players', period] as const
+export const publicPlayerKey = (playerId: number, period: Period) => ['public', 'player', playerId, period] as const
+export const rankingsKey = (query: RankingQuery) => ['public', 'rankings', query] as const
+export const championStatsKey = (period: Period) => ['public', 'champion-stats', period] as const
+export const HOME_KEY = ['public', 'home'] as const
+export const PUBLIC_CHAMPIONS_KEY = ['public', 'champions'] as const

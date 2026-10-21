@@ -1,0 +1,25 @@
+/* 공개 통계 공용 부품(챔피언 아이콘·승률·KDA·기간 필터) 스타일. 색은 theme.css 토큰만 쓴다. */
+.ci { display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden;
+  width: 32px; height: 32px; border-radius: 6px; background: var(--sunk); border: 1px solid var(--line);
+  color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1; }
+.ci img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ci.sm { width: 24px; height: 24px; border-radius: 5px; font-size: 9px; }
+.ci.lg { width: 44px; height: 44px; border-radius: 8px; font-size: 13px; }
+.ci-with-name { display: inline-flex; align-items: center; gap: 6px; }
+
+.wgood { color: var(--ok); }
+.wbad { color: var(--red); }
+.kda-perfect { color: var(--accent); font-weight: 700; }
+.stat-empty { color: var(--faint); }
+.team-label.team-blue { color: var(--blue); }
+.team-label.team-red { color: var(--red); }
+
+.period-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.period-filter label { display: inline-flex; align-items: center; gap: 6px; }
+.period-filter input[type='date'] { background: var(--sunk); color: var(--ink); border: 1px solid var(--line2);
+  border-radius: 6px; padding: 4px 8px; font: inherit; }
+.period-filter input[type='date']:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.period-filter button { background: transparent; color: var(--muted); border: 1px solid var(--line2);
+  border-radius: 6px; padding: 4px 10px; font: inherit; cursor: pointer; }
+.period-filter button:hover:not(:disabled) { color: var(--ink); border-color: var(--accent-line); }
+.period-filter button:disabled { opacity: 0.5; cursor: default; }
