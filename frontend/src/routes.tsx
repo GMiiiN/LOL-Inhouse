@@ -3,10 +3,13 @@ import type { RouteObject } from 'react-router-dom'
 import { AdminLayout } from './layouts/AdminLayout'
 import { PublicLayout } from './layouts/PublicLayout'
 import { LoginPage } from './pages/admin/LoginPage'
-import { PlayersPage } from './pages/admin/PlayersPage'
+import { PlayerTierAdminPage } from './pages/admin/players/PlayerTierAdminPage'
 import { SessionDetailPage } from './pages/admin/SessionDetailPage'
 import { SessionsPage } from './pages/admin/SessionsPage'
 import { SetRegisterPage } from './pages/admin/register/SetRegisterPage'
+import { ScoreSettingsPage } from './pages/admin/score/ScoreSettingsPage'
+import { TeamMakerPage } from './pages/team/TeamMakerPage'
+import { TierListPage } from './pages/tier/TierListPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
 export const routes: RouteObject[] = [
@@ -20,6 +23,8 @@ export const routes: RouteObject[] = [
       { path: '/records', element: <PlaceholderPage title="내전 기록" milestone="M5" /> },
       { path: '/duels/:duelId', element: <PlaceholderPage title="대결 상세" milestone="M5" /> },
       { path: '/sets/:setId', element: <PlaceholderPage title="세트 상세" milestone="M5" /> },
+      { path: '/tiers', element: <TierListPage /> },
+      { path: '/team-maker', element: <TeamMakerPage /> },
       { path: '/admin/login', element: <LoginPage /> },
     ],
   },
@@ -29,7 +34,8 @@ export const routes: RouteObject[] = [
       { path: '/admin', element: <SessionsPage /> },
       { path: '/admin/sessions/:sessionId', element: <SessionDetailPage /> },
       { path: '/admin/duels/:duelId/sets/new', element: <SetRegisterPage /> },
-      { path: '/admin/players', element: <PlayersPage /> },
+      { path: '/admin/players', element: <PlayerTierAdminPage /> },
+      { path: '/admin/score', element: <ScoreSettingsPage /> },
       { path: '/admin/history', element: <PlaceholderPage title="기록 관리" milestone="M6" /> },
     ],
   },

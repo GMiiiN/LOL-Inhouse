@@ -27,6 +27,9 @@ spring:
     enabled: true
   jackson:
     time-zone: Asia/Seoul
+    deserialization:
+      # 정수 칸에 소수(60.9)가 오면 잘라서 받지 않고 400으로 거절한다.
+      accept_float_as_int: false
   servlet:
     multipart:
       # 결과창 이미지 업로드 상한(M4). 요청 전체는 폼 필드 여유분 1MB를 더한다. 설명: docs/design/m4-design.md §5

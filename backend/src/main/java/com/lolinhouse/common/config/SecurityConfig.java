@@ -17,8 +17,8 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 
 /**
  * 역할: 담당자 로그인(세션 쿠키 + BCrypt) · CSRF(XSRF-TOKEN 쿠키 + X-XSRF-TOKEN 헤더) · 인가 규칙 · JSON 오류 응답을 묶는 보안 필터 체인.
- * 인가 순서(위에서부터 처음 맞는 규칙): health/info 공개 → GET /api/csrf 공개 → 로그인 공개 → /api/admin/** ADMIN → 오류 디스패치 공개 → 나머지 전부 거부.
- * 공개 조회 API는 M5에서 연다. 설명: ADR 007
+ * 인가 순서(위에서부터 처음 맞는 규칙): health/info 공개 → GET /api/csrf 공개 → 티어리스트·점수표 조회·팀 짜기 계산 공개(M4.5) → 로그인 공개 → /api/admin/** ADMIN → 오류 디스패치 공개 → 나머지 전부 거부.
+ * 그 밖의 공개 조회 API는 M5에서 연다. 설명: ADR 007
  */
 @Configuration
 public class SecurityConfig {
@@ -34,6 +34,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/tier-list", "/api/score-table").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/team-maker/auto", "/api/team-maker/manual").permitAll()
                         .requestMatchers("/api/admin/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()

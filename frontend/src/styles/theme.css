@@ -33,6 +33,13 @@
   --ok: #63c391;
   --warn: #e6bb62;
   --warn-bg: rgba(230, 187, 98, 0.12);
+  /* 티어 1~6 색(아티팩트 값). 흰 패널 위 글자 대비 4.5 이상으로 라이트 값을 새로 정했다 */
+  --t1: #e6bb62;
+  --t2: #ae8ef2;
+  --t3: #58b9e4;
+  --t4: #63c391;
+  --t5: #93a0b8;
+  --t6: #6c768b;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   --f-display: 'Noto Sans KR', 'IBM Plex Sans KR', system-ui, sans-serif;
   --f-body: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
@@ -71,5 +78,11 @@
   --ok: #1e7a45;
   --warn: #8a4b00;
   --warn-bg: rgba(138, 75, 0, 0.1);
+  --t1: #8a6200;
+  --t2: #6f45c6;
+  --t3: #16709b;
+  --t4: #1a7a4c;
+  --t5: #4d5b78;
+  --t6: #66708a;
   --shadow: 0 8px 24px rgba(31, 34, 48, 0.08);
 }

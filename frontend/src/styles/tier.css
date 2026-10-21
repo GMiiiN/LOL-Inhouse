@@ -1,0 +1,458 @@
+/* 티어리스트·선수 편집기·점수 설정 스타일. 친구 아티팩트의 board·chip·edgrid·scoregrid 규칙을 옮겼고,
+   기존 .chip(등록 화면)과 겹치지 않도록 모두 tier-/score- 접두사를 쓴다. 색은 theme.css 토큰만 쓴다.
+   작은 글자에 티어 색을 그대로 쓰면 라이트 테마 --t6이 흰 패널 위에서 4.94, 옅은 배경 위에서 4.5 아래라서,
+   글자색은 var(--ink)와 섞어 대비를 올린다. 큰 숫자(.tier-big, 36px)는 3:1 기준이라 원색을 쓴다. */
+
+.tier-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.tier-bar h2 {
+  margin: 0;
+}
+
+.tier-count {
+  font-family: var(--f-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.tier-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.tier-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  padding: 6px 13px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tier-seg button:hover {
+  color: var(--ink);
+}
+
+.tier-seg button[aria-pressed='true'] {
+  background: var(--panel2);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+
+.header-button[aria-pressed='true'] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tier-help {
+  margin: 0 0 12px;
+  max-width: 70ch;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tier-scroll {
+  overflow-x: auto;
+}
+
+/* ---- 티어표 ---- */
+.tier-board {
+  width: 100%;
+  min-width: 820px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.tier-board thead th {
+  padding: 2px 12px;
+  text-align: left;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.tier-board .tier-corner {
+  width: 84px;
+}
+
+.tier-board tbody tr {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tc) 14%, var(--panel)),
+    color-mix(in srgb, var(--tc) 5%, var(--panel)) 40%
+  );
+}
+
+.tier-board tbody th {
+  padding: 12px 8px;
+  text-align: center;
+  vertical-align: middle;
+  border-radius: 12px 0 0 12px;
+  box-shadow: inset 3px 0 0 var(--tc);
+}
+
+.tier-big {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--tc);
+}
+
+.tier-lbl {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--muted);
+}
+
+.tier-board tbody td {
+  padding: 10px;
+  vertical-align: top;
+  border-left: 1px solid color-mix(in srgb, var(--tc) 14%, transparent);
+}
+
+.tier-board tbody td:last-child {
+  border-radius: 0 12px 12px 0;
+}
+
+.tier-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 8px;
+}
+
+.tier-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+}
+
+button.tier-chip {
+  cursor: pointer;
+}
+
+button.tier-chip:hover {
+  border-color: var(--tc);
+}
+
+.tier-chip-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tier-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tier-chip-score {
+  flex: none;
+  min-width: 24px;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tc) 18%, transparent);
+  font-family: var(--f-num);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tier-trend {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.tier-trend.up {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+
+.tier-trend.down {
+  color: var(--err);
+  background: color-mix(in srgb, var(--err) 14%, transparent);
+}
+
+/* ---- 사람별 표 ---- */
+.tier-people {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.tier-people th {
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line2);
+}
+
+.tier-people td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tier-person-name {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.tier-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--tc) 80%, var(--ink));
+}
+
+.tier-tag-score {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tier-empty {
+  color: var(--muted);
+}
+
+.tier-actions {
+  white-space: nowrap;
+}
+
+.tier-danger {
+  color: var(--err);
+  border-color: color-mix(in srgb, var(--err) 45%, var(--line2));
+}
+
+/* ---- 편집기 ---- */
+.tier-editor {
+  border-color: var(--accent-line);
+}
+
+.tier-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tier-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+}
+
+.tier-field label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tier-field .tier-help {
+  margin: 0;
+}
+
+.tier-form input,
+.tier-form select {
+  padding: 8px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+}
+
+.tier-form select:disabled {
+  opacity: 0.5;
+}
+
+.tier-edgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.tier-edlane {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--sunk);
+}
+
+.tier-edlane-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tier-edlane-row {
+  display: flex;
+  gap: 6px;
+}
+
+.tier-edlane-row select {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+}
+
+.tier-unregistered summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tier-unregistered-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- 점수 설정 ---- */
+.score-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.score-input {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.score-input input {
+  width: 84px;
+  padding: 7px 9px;
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--f-num);
+}
+
+.score-input input[aria-invalid='true'] {
+  border-color: var(--err);
+}
+
+.score-grid {
+  border-collapse: separate;
+  border-spacing: 6px;
+  max-width: 460px;
+}
+
+.score-grid th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.score-grid tbody th {
+  padding-right: 8px;
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: left;
+  color: color-mix(in srgb, var(--tc) 80%, var(--ink));
+}
+
+.score-grid td {
+  min-width: 70px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--sunk);
+  font-family: var(--f-num);
+  text-align: center;
+}
+
+.score-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.score-status {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.score-status.is-error {
+  color: var(--err);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tier-chip,
+  .tier-seg button {
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  }
+}
+
+.bee { flex: none; width: 24px; height: 24px; margin-left: 4px; vertical-align: -6px; display: inline-block; filter: drop-shadow(0 0 4px rgba(230, 187, 98, 0.5)); }
+
+.tier-beechk { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; cursor: pointer; width: fit-content; }
+.tier-beechk input { width: 16px; height: 16px; accent-color: #e6bb62; }
