@@ -23,6 +23,6 @@ import org.springframework.context.annotation.Import;
 		"app.admin.username=test-admin",
 		"app.admin.password=test-password-1234"
 })
-@Import({TestcontainersConfiguration.class, TestIngestConfiguration.class})
+@Import({TestcontainersConfiguration.class, TestIngestConfiguration.class, TestRandomConfiguration.class})
 public @interface IntegrationTest {
 }

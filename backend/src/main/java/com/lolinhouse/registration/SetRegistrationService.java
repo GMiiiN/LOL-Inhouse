@@ -219,6 +219,10 @@ public class SetRegistrationService {
     // ----- 오류 변환 -----
 
     private RuntimeException translate(DataIntegrityViolationException e, String fingerprint) {
+        if (violatesPlayerForeignKey(e)) {
+            // 확인한 선수가 저장 직전에 삭제된 경우(MySQL 1452). 데이터는 FK가 지켰고 사용자는 선수 선택을 다시 확인하면 된다
+            return ApiException.conflict("CONCURRENT_REQUEST_CONFLICT", "선택한 선수가 삭제되었습니다. 선수를 다시 확인하세요.");
+        }
         String constraint = constraintName(e);
         if (constraint == null) {
             return e;
@@ -236,6 +240,18 @@ public class SetRegistrationService {
             return ApiException.conflict("EXTRACTION_ALREADY_SAVED", "이미 세트로 저장된 추출 작업입니다.");
         }
         return e;
+    }
+
+    private static boolean violatesPlayerForeignKey(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause.getMessage() != null && cause.getMessage().contains("fk_game_set_player_player")) {
+                return true;
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
+        }
+        return false;
     }
 
     // MySQL 1062 메시지의 "for key '...'"에서 제약 이름만 꺼낸다. 메시지에는 닉네임 키가 섞일 수 있어 로그에 남기지 않는다

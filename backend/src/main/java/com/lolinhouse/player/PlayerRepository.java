@@ -1,5 +1,6 @@
 package com.lolinhouse.player;
 
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
@@ -18,4 +19,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Player p where p.id = :id")
     Optional<Player> findByIdForUpdate(@Param("id") Long id);
+
+    /** 실명이 같은 선수 후보. DB 콜레이션은 대소문자·악센트를 무시하므로 정확히 같은지는 호출자가 Java로 다시 거른다. */
+    List<Player> findByRealName(String realName);
 }

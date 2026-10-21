@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { logout } from '../api/admin'
 import { initCsrf } from '../api/client'
-import { ME_KEY, PLAYERS_KEY, SESSIONS_KEY } from '../api/queryKeys'
+import { ME_KEY, PLAYERS_KEY, PLAYER_PROFILES_KEY, SESSIONS_KEY } from '../api/queryKeys'
 import { useAdminMe } from '../auth/useAdminMe'
 import { ErrorNotice } from '../components/ErrorNotice'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -22,6 +22,7 @@ export function AdminLayout() {
       setLoggedOut(true)
       queryClient.setQueryData(ME_KEY, null)
       queryClient.removeQueries({ queryKey: PLAYERS_KEY })
+      queryClient.removeQueries({ queryKey: PLAYER_PROFILES_KEY })
       queryClient.removeQueries({ queryKey: SESSIONS_KEY })
       // 세션이 끝나면 토큰도 바뀐다. 새로 받되 실패해도 로그아웃은 성공이며, 다음 변경 요청의 CSRF_INVALID 재시도가 보완한다.
       void initCsrf()
@@ -68,6 +69,7 @@ export function AdminLayout() {
         <nav className="app-nav" aria-label="담당자 메뉴">
           <NavLink to="/admin" end>내전·대결</NavLink>
           <NavLink to="/admin/players">선수 관리</NavLink>
+          <NavLink to="/admin/score">점수 설정</NavLink>
           <NavLink to="/admin/history">기록 관리</NavLink>
         </nav>
         <div className="header-actions">

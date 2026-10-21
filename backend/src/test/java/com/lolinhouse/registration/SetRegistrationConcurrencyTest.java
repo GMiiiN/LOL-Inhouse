@@ -212,4 +212,45 @@ class SetRegistrationConcurrencyTest {
             pool.shutdownNow();
         }
     }
+
+    @Autowired
+    com.lolinhouse.tier.PlayerProfileService profileService;
+
+    @Test
+    void 등록이_확인한_선수가_저장_직전에_삭제되면_500이_아니라_409_CONCURRENT_REQUEST_CONFLICT다() throws Exception {
+        long duelId = data.newFirstDuel();
+        long[] teamA = data.newPlayers(5);
+        long[] teamB = data.newPlayers(5);
+        SetRegistrationRequest request = data.request(data.succeededJob(duelId), teamA, teamB, Game.random()).build();
+
+        // 삭제 트랜잭션이 선수 행을 지운 채 커밋을 미루는 동안 등록이 들어온다: 등록은 옛 스냅샷에서 선수를 보고,
+        // 세트 선수 INSERT의 FK 검사가 삭제 커밋을 기다렸다가 1452로 실패한다.
+        CountDownLatch deletedButNotCommitted = new CountDownLatch(1);
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            Future<?> delete = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                profileService.delete(teamA[0]);
+                deletedButNotCommitted.countDown();
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            deletedButNotCommitted.await();
+
+            Object result;
+            try {
+                result = registrationService.register(duelId, request);
+            } catch (Exception e) {
+                result = e;
+            }
+            delete.get();
+
+            assertThat(codeOf(result)).isEqualTo("CONCURRENT_REQUEST_CONFLICT");
+            assertThat(gameSets.findByDuelIdAndDeletedAtIsNullOrderBySetNoAsc(duelId)).isEmpty();
+        } finally {
+            pool.shutdownNow();
+        }
+    }
 }

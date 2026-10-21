@@ -1,5 +1,6 @@
 // 서버 오류 code를 화면에 보여 줄 한국어 문구로 바꾼다
 import { ApiError } from './client'
+import { POSITION_LABEL } from './types'
 
 export const LOGIN_FAILED_MESSAGE = '아이디 또는 비밀번호가 맞지 않습니다.'
 
@@ -46,6 +47,31 @@ const MESSAGES: Record<string, string | ((error: ApiError) => string)> = {
     '다른 곳에서 세트가 먼저 등록되어 세트 번호가 바뀌었습니다. 등록 현황을 새로 불러왔으니 확인한 뒤 다시 저장해 주세요.',
   PLAYER_NOT_FOUND: '선택한 선수를 찾을 수 없습니다. 선수를 다시 골라 주세요.',
   DUEL_NOT_FOUND: '대결을 찾을 수 없습니다.',
+
+  // ---- M4.5 라인 티어·점수표·팀 짜기 ----
+  INVALID_LANE_TIER: '라인 티어 값이 올바르지 않습니다. 티어는 1~6, 우열은 상·중·하 중에서 골라 주세요.',
+  LANE_TIER_REQUIRED: '최소 한 라인은 티어를 골라 주세요.',
+  NICKNAME_REQUIRED: '닉네임을 하나 이상 입력해 주세요.',
+  DUPLICATE_REAL_NAME: '같은 이름이 이미 있어요.',
+  PLAYER_HAS_RECORDS: '세트 기록이 있는 선수는 삭제할 수 없습니다.',
+  INVALID_SCORE_TABLE: '점수는 빈칸 없이 -999~999 사이의 정수로 입력해 주세요.',
+  TEAM_PARTICIPANT_COUNT: '참가자를 정확히 10명 골라 주세요.',
+  TEAM_DUPLICATE_PARTICIPANT: '같은 사람이 두 번 선택됐어요.',
+  TEAM_LANE_PICK_INCOMPLETE: '모든 라인에 2명씩 골라 주세요.',
+  TEAM_LANE_TIER_MISSING: '그 라인 티어가 없는 사람이 들어 있어요. 티어가 있는 사람만 고를 수 있어요.',
+  TEAM_PLAYER_NOT_FOUND: '선택한 선수를 찾을 수 없어요. 티어리스트를 새로 불러온 뒤 다시 골라 주세요.',
+  TEAM_PAIR_INVALID: '같은 팀 조건이 올바르지 않아요. 참가자 중 서로 다른 두 사람만, 최대 5쌍까지 묶을 수 있어요.',
+  TEAM_NO_VALID_SPLIT:
+    '가능한 조합이 없어요. 고른 사람들의 라인이 겹쳐서 양 팀 모두 5개 라인을 채울 수 없거나, 같은 팀 조건 때문에 막혀요.',
+  TEAM_LANE_FIX_INVALID: (e) =>
+    e.position !== undefined && e.count !== undefined
+      ? `${POSITION_LABEL[e.position]}에 ${e.count}명이 고정돼 있어요. 한 라인은 양 팀 합쳐 2명까지만 고정할 수 있어요.`
+      : '라인 고정이 올바르지 않아요. 참가자만 고정할 수 있고, 한 라인은 양 팀 합쳐 2명까지만 고정할 수 있어요.',
+  TEAM_FIXED_LANE_BLOCKED:
+    '라인 고정 때문에 가능한 조합이 없어요. 고정한 라인 때문에 다른 사람들이 갈 라인이 모자라요. 고정을 하나씩 풀어 보세요.',
+  TEAM_PAIR_UNSATISFIABLE: '같은 팀 조건을 만족하는 조합이 없어요. 같은 라인의 두 사람은 같은 팀이 될 수 없어요.',
+  TEAM_MAKER_BUSY: '지금 다른 팀 짜기 계산이 진행 중이에요. 잠시 뒤 다시 시도해 주세요.',
+  RATE_LIMITED: '요청이 너무 많아요. 잠시 뒤 다시 시도해 주세요.',
 }
 
 // 추출 작업이 FAILED가 된 이유(작업 상태의 errorCode). 요청 오류와 달리 HTTP 오류가 아니라 작업 상태 값이다.

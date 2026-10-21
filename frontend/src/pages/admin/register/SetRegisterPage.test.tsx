@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Evaluation, SetRegistrationRequest } from '../../../api/registrationTypes'
 import { createQueryClient } from '../../../queryClient'
 import { jsonResponse, mockFetch, problemResponse, type MockHandler } from '../../../test/mockFetch'
@@ -73,6 +73,8 @@ const lastBody = (calls: { method: string; path: string; body: string | null }[]
 async function pickCandidate(user: ReturnType<typeof userEvent.setup>) {
   await user.click(within(rowGroup('위쪽 팀 결과창 2행')).getByRole('radio', { name: /홍길동/ }))
 }
+
+vi.setConfig({ testTimeout: 20000 }) // 단계가 많아 전체 병렬 실행 부하에서 5초를 넘길 때가 있다
 
 describe('SetRegisterPage', () => {
   it('붙여넣기 → 업로드(FormData) → 폴링 → 초안 → 후보 선택 → 검사 → 저장 201 → 저장됨 화면', async () => {

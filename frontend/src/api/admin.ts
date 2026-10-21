@@ -7,8 +7,6 @@ import type {
   InhouseSessionDetail,
   InhouseSessionSummary,
   Player,
-  PlayerCreateRequest,
-  PlayerUpdateRequest,
 } from './types'
 
 // ---- 인증 ----
@@ -31,18 +29,6 @@ export const logout = () => apiRequest<void>('/api/admin/logout', { method: 'POS
 
 // ---- 선수 ----
 export const listPlayers = () => apiRequest<Player[]>('/api/admin/players')
-
-export const createPlayer = (body: PlayerCreateRequest) =>
-  apiRequest<Player>('/api/admin/players', { method: 'POST', json: body })
-
-export const updatePlayer = (id: number, body: PlayerUpdateRequest) =>
-  apiRequest<Player>(`/api/admin/players/${id}`, { method: 'PUT', json: body })
-
-export const addAlias = (playerId: number, nickname: string) =>
-  apiRequest<Player>(`/api/admin/players/${playerId}/aliases`, { method: 'POST', json: { nickname } })
-
-export const deleteAlias = (playerId: number, aliasId: number) =>
-  apiRequest<void>(`/api/admin/players/${playerId}/aliases/${aliasId}`, { method: 'DELETE' })
 
 // ---- 내전 묶음·대결 ----
 export const listSessions = () => apiRequest<InhouseSessionSummary[]>('/api/admin/inhouse-sessions')

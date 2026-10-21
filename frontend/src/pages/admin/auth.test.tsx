@@ -40,7 +40,8 @@ describe('담당자 인증 흐름', () => {
         loggedIn = true
         return jsonResponse(200, { username: 'admin' })
       },
-      'GET /api/admin/players': () => jsonResponse(200, []),
+      'GET /api/admin/player-profiles': () => jsonResponse(200, []),
+      'GET /api/tier-list': () => jsonResponse(200, { scoreTable: null, players: [] }),
     })
     const { router } = renderApp('/admin/players')
 
@@ -152,7 +153,8 @@ describe('담당자 인증 흐름', () => {
   it('작업 중 세션이 만료돼 401이 오면 로그인 화면으로 보낸다', async () => {
     mockFetch({
       'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
-      'GET /api/admin/players': () => problemResponse(401, 'UNAUTHORIZED'),
+      'GET /api/admin/player-profiles': () => problemResponse(401, 'UNAUTHORIZED'),
+      'GET /api/tier-list': () => jsonResponse(200, { scoreTable: null, players: [] }),
     })
     const { router } = renderApp('/admin/players')
 

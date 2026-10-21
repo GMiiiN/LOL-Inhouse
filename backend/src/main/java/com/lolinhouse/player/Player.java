@@ -44,6 +44,9 @@ public class Player {
     @Column(name = "main_position", length = 10)
     private Position mainPosition;
 
+    @Column(name = "flagged", nullable = false)
+    private boolean flagged;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -86,6 +89,11 @@ public class Player {
         return mainPosition;
     }
 
+    /** 요주 인물 표시. 팀 짜기 계산에는 영향이 없다. */
+    public boolean isFlagged() {
+        return flagged;
+    }
+
     public Instant createdAt() {
         return createdAt;
     }
@@ -106,6 +114,10 @@ public class Player {
     /** 미등록 선수를 등록하거나 실명을 고친다. 실명을 지우는 기능은 없다(등록 취소 없음). */
     public void changeRealName(String realName) {
         this.realName = requireRealName(realName);
+    }
+
+    public void changeFlagged(boolean flagged) {
+        this.flagged = flagged;
     }
 
     public void changeMainPosition(Position mainPosition) {

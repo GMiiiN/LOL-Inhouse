@@ -9,3 +9,7 @@ export const CHAMPIONS_KEY = ['admin', 'champions'] as const
 export const registrationContextKey = (duelId: number) => ['admin', 'registration-context', duelId] as const
 export const extractionKey = (jobId: number) => ['admin', 'extractions', jobId] as const
 export const draftKey = (jobId: number) => ['admin', 'extractions', jobId, 'draft'] as const
+// M4.5 라인 티어·점수표 (티어리스트·점수표는 공개 조회라 ['admin'] 아래가 아니다)
+export const TIER_LIST_KEY = ['tier-list'] as const
+export const SCORE_TABLE_KEY = ['score-table'] as const
+export const PLAYER_PROFILES_KEY = ['admin', 'player-profiles'] as const

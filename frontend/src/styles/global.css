@@ -54,18 +54,23 @@ a {
 .app-logo {
   font-weight: 700;
   font-size: 18px;
+  white-space: nowrap;
 }
 
 .app-nav {
   display: flex;
   gap: 4px;
   flex: 1;
+  min-width: 0;
+  overflow-x: auto; /* 좁은 창에서는 메뉴만 가로로 넘기고 오른쪽 버튼은 그대로 둔다 */
+  scrollbar-width: none;
 }
 
 .app-nav a {
   padding: 6px 12px;
   border-radius: 6px;
   color: var(--muted);
+  white-space: nowrap; /* 메뉴가 늘어도 글자가 두 줄로 깨지지 않게 */
 }
 
 .app-nav a.active {
@@ -80,6 +85,8 @@ a {
   gap: 12px;
   font-size: 13px;
   color: var(--muted);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .header-button {

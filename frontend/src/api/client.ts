@@ -1,5 +1,5 @@
 // fetch 래퍼: 같은 출처 쿠키, CSRF 헤더 자동 첨부, 403 CSRF_INVALID 1회 재시도, ProblemDetail 파싱.
-import type { AliasConflict, FieldError, ProblemBody } from './types'
+import type { AliasConflict, FieldError, Position, ProblemBody } from './types'
 
 const CSRF_COOKIE = 'XSRF-TOKEN'
 const CSRF_HEADER = 'X-XSRF-TOKEN'
@@ -19,6 +19,8 @@ export class ApiError extends Error {
   existingDuelId: number | undefined
   existingSetNo: number | undefined
   savedSetId: number | undefined
+  position: Position | undefined
+  count: number | undefined
 
   constructor(status: number, body: ProblemBody = {}) {
     super(body.detail ?? body.title ?? `HTTP ${status}`)
@@ -35,6 +37,8 @@ export class ApiError extends Error {
     this.existingDuelId = body.existingDuelId
     this.existingSetNo = body.existingSetNo
     this.savedSetId = body.savedSetId
+    this.position = body.position
+    this.count = body.count
   }
 }
 

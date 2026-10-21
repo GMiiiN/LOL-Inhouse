@@ -164,9 +164,9 @@ class ConcurrencyServiceTest {
     @Test
     void concurrentAddOfSameNicknameToTwoPlayersSucceedsOnceAndConflictsOnce() throws Exception {
         for (int round = 0; round < 5; round++) {
-            long playerA = playerService.create(new PlayerCreateRequest("동시A", Position.TOP,
+            long playerA = playerService.create(new PlayerCreateRequest(unique("동시A"), Position.TOP,
                     List.of(unique("동시기본")))).id();
-            long playerB = playerService.create(new PlayerCreateRequest("동시B", Position.TOP,
+            long playerB = playerService.create(new PlayerCreateRequest(unique("동시B"), Position.TOP,
                     List.of(unique("동시기본")))).id();
             String contested = unique("Contested");
 

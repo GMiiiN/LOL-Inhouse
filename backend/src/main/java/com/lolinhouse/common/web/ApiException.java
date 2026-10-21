@@ -38,6 +38,14 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.CONTENT_TOO_LARGE, code, detail);
     }
 
+    public static ApiException unprocessable(String code, String detail) {
+        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, code, detail);
+    }
+
+    public static ApiException tooManyRequests(String code, String detail) {
+        return new ApiException(HttpStatus.TOO_MANY_REQUESTS, code, detail);
+    }
+
     public static ApiException serviceUnavailable(String code, String detail) {
         return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, code, detail);
     }

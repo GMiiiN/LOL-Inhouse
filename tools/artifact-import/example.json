@@ -1,0 +1,12 @@
+{
+  "players": [
+    { "name": "가상철수", "lanes": { "top": { "t": 2, "s": "상" }, "mid": { "t": 3, "s": "중" } }, "nicks": ["ExampleTop", "예시부캐"], "bee": true },
+    { "name": "가상영희", "lanes": { "sup": { "t": 4, "s": "하" }, "adc": { "t": 5, "s": "중" } }, "nicks": ["ExampleSup"] },
+    { "name": "가상라인없음", "lanes": {}, "nicks": ["NoLane"] }
+  ],
+  "score": {
+    "base": { "1": 60, "2": 52, "3": 44, "4": 36, "5": 28, "6": 20 },
+    "sub": { "상": 3, "중": 0, "하": -3 },
+    "lane": { "top": 0, "jg": 0, "mid": 0, "adc": -4, "sup": -3 }
+  }
+}

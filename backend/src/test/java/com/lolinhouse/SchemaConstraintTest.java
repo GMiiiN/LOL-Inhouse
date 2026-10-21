@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
- * 역할: V2·V3 스키마의 제약(UNIQUE·CHECK·FK·생성 컬럼)이 DB에서 실제로 위반을 막는지 JdbcTemplate으로 직접 INSERT해 확인한다.
+ * 역할: V2·V3·V4 스키마의 제약(UNIQUE·CHECK·FK·생성 컬럼)이 DB에서 실제로 위반을 막는지 JdbcTemplate으로 직접 INSERT해 확인한다.
  * 엔티티를 거치지 않는 이유: 앱 코드가 잘못되거나 동시 요청이 와도 DB가 마지막 방어선이어야 하기 때문이다.
  * 위반 한 가지당 테스트 하나. 오류는 MySQL 오류 코드로 단정한다(1062 중복, 3819 CHECK, 1451/1452 FK, 3105 생성 컬럼 쓰기).
  */
@@ -684,5 +684,83 @@ class SchemaConstraintTest {
         long session = session();
         insert("duel", row("session_id", session, "seq", 1, "fearless_mode", "RESET", "created_at", TS));
         insert("duel", row("session_id", session, "seq", 2, "fearless_mode", "CONTINUE", "created_at", TS));
+    }
+
+    // ---------- player_lane_tier / score_setting (V4) ----------
+
+    private Map<String, Object> laneTierRow(long playerId, String position, int tier, String sub) {
+        return row("player_id", playerId, "position", position, "tier", tier, "sub", sub, "updated_at", TS);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 7})
+    void laneTierMustBeBetweenOneAndSix(int tier) {
+        long p = player();
+
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", laneTierRow(p, "TOP", tier, "MID"))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void laneTierPositionAndSubMustBeExactUpperCaseValues() {
+        long p = player();
+
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", laneTierRow(p, "top", 3, "MID"))))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", laneTierRow(p, "BOT", 3, "MID"))))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", laneTierRow(p, "TOP", 3, "mid"))))
+                .isEqualTo(CHECK_VIOLATED);
+    }
+
+    @Test
+    void laneTierLastChangeColumnsAreAllOrNone() {
+        long p = player();
+
+        Map<String, Object> onlyDirection = with(laneTierRow(p, "TOP", 3, "MID"), "last_change_direction", "UP");
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", onlyDirection))).isEqualTo(CHECK_VIOLATED);
+
+        Map<String, Object> badDirection = with(with(with(laneTierRow(p, "TOP", 3, "MID"),
+                "last_change_direction", "SIDE"), "last_change_from_tier", 4), "last_change_from_sub", "LOW");
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", badDirection))).isEqualTo(CHECK_VIOLATED);
+
+        Map<String, Object> all = with(with(with(laneTierRow(p, "TOP", 3, "MID"),
+                "last_change_direction", "UP"), "last_change_from_tier", 4), "last_change_from_sub", "LOW");
+        insert("player_lane_tier", all);
+    }
+
+    @Test
+    void laneTierIsUniquePerPlayerAndPositionAndNeedsExistingPlayer() {
+        long p = player();
+        insert("player_lane_tier", laneTierRow(p, "TOP", 3, "MID"));
+
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", laneTierRow(p, "TOP", 2, "HIGH"))))
+                .isEqualTo(DUPLICATE_ENTRY);
+        insert("player_lane_tier", laneTierRow(p, "MID", 2, "HIGH"));
+        assertThat(mysqlErrorOf(() -> insert("player_lane_tier", laneTierRow(999_999L, "TOP", 3, "MID"))))
+                .isEqualTo(CHILD_ROW_NO_PARENT);
+    }
+
+    @Test
+    void deletingPlayerCascadesToLaneTiers() {
+        long p = player();
+        insert("player_lane_tier", laneTierRow(p, "TOP", 3, "MID"));
+
+        jdbc.update("delete from player where id = ?", p);
+
+        assertThat(jdbc.queryForObject("select count(*) from player_lane_tier where player_id = ?", Integer.class, p))
+                .isZero();
+    }
+
+    @Test
+    void scoreSettingAllowsOnlyRowOneAndValuesWithinRange() {
+        String insertSql = "insert into score_setting values (?, 1,1,1,1,1,1, 0,0,0, 0,0,0,0,0, UTC_TIMESTAMP(6))";
+        assertThat(mysqlErrorOf(() -> jdbc.update(insertSql, 2))).isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> jdbc.update("update score_setting set base_tier1 = 1000 where id = 1")))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(mysqlErrorOf(() -> jdbc.update("update score_setting set lane_support = -1000 where id = 1")))
+                .isEqualTo(CHECK_VIOLATED);
+        assertThat(jdbc.update("update score_setting set base_tier1 = 999, lane_support = -999 where id = 1"))
+                .isEqualTo(1);
     }
 }

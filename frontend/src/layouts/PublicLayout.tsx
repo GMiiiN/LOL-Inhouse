@@ -14,6 +14,8 @@ export function PublicLayout() {
           <NavLink to="/ranking">랭킹</NavLink>
           <NavLink to="/players">선수</NavLink>
           <NavLink to="/records">내전 기록</NavLink>
+          <NavLink to="/tiers">티어리스트</NavLink>
+          <NavLink to="/team-maker">팀 짜기</NavLink>
         </nav>
         <div className="header-actions">
           <Link to="/admin">담당자</Link>

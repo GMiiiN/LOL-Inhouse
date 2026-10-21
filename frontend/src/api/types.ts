@@ -31,6 +31,8 @@ export type ProblemBody = {
   errors?: FieldError[]
   conflicts?: AliasConflict[]
   existingSessionId?: number // SESSION_DATE_CONFLICT 때만
+  position?: Position // TEAM_LANE_FIX_INVALID(라인당 3명 이상) 때만
+  count?: number
 } & RegistrationProblemExtras // M4 세트 등록 오류의 확장 필드
 
 // ---- 인증 ----
@@ -46,20 +48,6 @@ export type Player = {
   registered: boolean
   mainPosition: Position | null
   aliases: PlayerAlias[]
-}
-
-// POST /api/admin/players
-export type PlayerCreateRequest = {
-  realName: string
-  mainPosition: Position | null // null = 모름
-  nicknames: string[]
-}
-
-// PUT /api/admin/players/{id} - 전체 치환. 별칭은 별도 엔드포인트로만 바꾼다고 가정
-// realName null/빈 값: 미등록 선수는 미등록 유지, 등록 선수는 서버가 400 REAL_NAME_CANNOT_BE_CLEARED
-export type PlayerUpdateRequest = {
-  realName: string | null
-  mainPosition: Position | null
 }
 
 // ---- 내전 묶음·대결 ----
