@@ -55,6 +55,7 @@ export type InhouseSessionSummary = {
   id: number
   startDate: string // "2026-10-15"
   duelCount: number
+  setCount: number // 삭제 표시된 세트 포함. 0일 때만 묶음을 지울 수 있다
 }
 
 export type DuelSummary = {

@@ -72,8 +72,9 @@ public class GameSet {
     @Column(name = "shot_date", nullable = false)
     private LocalDate shotDate;
 
-    @Column(name = "duration_sec", nullable = false)
-    private int durationSec;
+    /** 경기 시간(초). 결과창 없이 가져온 기록은 모르므로 null. */
+    @Column(name = "duration_sec")
+    private Integer durationSec;
 
     @Column(name = "team1_displayed_kills", nullable = false)
     private int team1DisplayedKills;
@@ -128,11 +129,11 @@ public class GameSet {
     }
 
     /**
-     * 선수·밴이 없는 세트를 만든다(이어서 addPlayer/addBan). 지문은 날짜·시간·두 팀 킬/골드로 여기서 계산한다.
+     * 선수·밴이 없는 세트를 만든다(이어서 addPlayer/addBan). 지문은 날짜·시간·두 팀 킬/골드로 여기서 계산한다(durationSec이 null이면 시간 자리 "?").
      * imageHash와 imageKey는 둘 다 있거나 둘 다 null이어야 한다(DB CHECK와 같은 규칙).
      */
     public static GameSet create(Long duelId, int setNo, Side team1Side, DuelTeam winnerTeam, DuelTeam topTeam,
-            LocalDate shotDate, int durationSec, DisplayedTotals team1, DisplayedTotals team2, String imageHash,
+            LocalDate shotDate, Integer durationSec, DisplayedTotals team1, DisplayedTotals team2, String imageHash,
             String imageKey) {
         if (duelId == null || team1Side == null || winnerTeam == null || shotDate == null || team1 == null
                 || team2 == null) {
@@ -162,8 +163,10 @@ public class GameSet {
         set.team2DisplayedGold = team2.gold();
         set.imageHash = imageHash;
         set.imageKey = imageKey;
-        set.fingerprint = SetFingerprint.of(shotDate, durationSec, new TeamTotals(team1.kills(), team1.gold()),
-                new TeamTotals(team2.kills(), team2.gold())).canonical();
+        TeamTotals totals1 = new TeamTotals(team1.kills(), team1.gold());
+        TeamTotals totals2 = new TeamTotals(team2.kills(), team2.gold());
+        set.fingerprint = (durationSec == null ? SetFingerprint.ofUnknownDuration(shotDate, totals1, totals2)
+                : SetFingerprint.of(shotDate, durationSec, totals1, totals2)).canonical();
         return set;
     }
 
@@ -230,7 +233,7 @@ public class GameSet {
         return shotDate;
     }
 
-    public int durationSec() {
+    public Integer durationSec() {
         return durationSec;
     }
 

@@ -1,8 +1,9 @@
 // 공개 통계 화면 공용 표시 함수. 값이 없을 때(0세트·0경기)는 EM_DASH를 돌려준다.
 export const EM_DASH = '—'
 
-// 초 → "mm:ss" (60분 이상이면 분이 두 자리를 넘는다)
-export function formatDuration(seconds: number): string {
+// 초 → "mm:ss" (60분 이상이면 분이 두 자리를 넘는다). 경기 시간을 모르는 기록(null)은 "—"
+export function formatDuration(seconds: number | null): string {
+  if (seconds === null) return EM_DASH
   const total = Math.max(0, Math.round(seconds))
   const mm = Math.floor(total / 60)
   const ss = total % 60

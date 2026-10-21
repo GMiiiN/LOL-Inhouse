@@ -12,6 +12,9 @@ tools/extraction-lab/cache/
 # 업로드 결과창 이미지·Data Dragon 캐시(M4): 친구 닉네임이 담긴 이미지가 있어 올리지 않는다
 /data/
 
+# 데스크탑 운영 백업(M5.5): DB 덤프·결과창 이미지가 들어 있어 올리지 않는다
+/backups/
+
 # Java / Gradle
 .gradle/
 build/

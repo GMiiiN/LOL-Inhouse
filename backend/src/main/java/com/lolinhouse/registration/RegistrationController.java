@@ -53,6 +53,13 @@ public class RegistrationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(registrationService.register(duelId, request));
     }
 
+    /** 결과창 없이 세트 가져오기(담당자 도구용). 경기 시간 null 허용. ADR 014 */
+    @PostMapping("/duels/{duelId}/sets/import")
+    ResponseEntity<SetRegistrationResponse> importSet(@PathVariable Long duelId,
+            @Valid @RequestBody SetImportRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(registrationService.importSet(duelId, request));
+    }
+
     @ExceptionHandler(SetRulesViolatedException.class)
     ResponseEntity<ProblemDetail> handleRulesViolated(SetRulesViolatedException ex) {
         ProblemDetail problem = ProblemResponses.of(HttpStatus.UNPROCESSABLE_CONTENT, "SET_RULES_VIOLATED",

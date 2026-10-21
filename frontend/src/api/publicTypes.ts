@@ -51,7 +51,7 @@ export type SetView = {
   sessionId: number
   sessionDate: string
   shotDate: string
-  durationSec: number
+  durationSec: number | null
   team1Side: Side
   winnerTeam: DuelTeam
   teams: [TeamView, TeamView] // [TEAM1, TEAM2]

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.lolinhouse.common.web.ApiException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,12 +21,16 @@ public class InhouseSessionService {
 
     private final InhouseSessionRepository sessionRepository;
     private final DuelRepository duelRepository;
+    private final GameSetRepository gameSetRepository;
+    private final JdbcTemplate jdbc;
     private final TransactionTemplate transactionTemplate;
 
     public InhouseSessionService(InhouseSessionRepository sessionRepository, DuelRepository duelRepository,
-            TransactionTemplate transactionTemplate) {
+            GameSetRepository gameSetRepository, JdbcTemplate jdbc, TransactionTemplate transactionTemplate) {
         this.sessionRepository = sessionRepository;
         this.duelRepository = duelRepository;
+        this.gameSetRepository = gameSetRepository;
+        this.jdbc = jdbc;
         this.transactionTemplate = transactionTemplate;
     }
 
@@ -38,7 +43,7 @@ public class InhouseSessionService {
         try {
             InhouseSession saved = transactionTemplate.execute(status ->
                     sessionRepository.saveAndFlush(InhouseSession.of(startDate)));
-            return new InhouseSessionSummaryResponse(saved.id(), saved.startDate(), 0);
+            return new InhouseSessionSummaryResponse(saved.id(), saved.startDate(), 0, 0);
         } catch (DataIntegrityViolationException e) {
             throwIfDateTaken(startDate); // 사전 조회 이후 다른 요청이 먼저 만든 경우
             throw e;
@@ -55,8 +60,13 @@ public class InhouseSessionService {
                 .stream()
                 .collect(Collectors.toMap(DuelRepository.SessionDuelCount::getSessionId,
                         DuelRepository.SessionDuelCount::getDuelCount));
+        Map<Long, Long> setCounts = gameSetRepository.countBySessionIds(sessions.stream().map(InhouseSession::id).toList())
+                .stream()
+                .collect(Collectors.toMap(GameSetRepository.SessionSetCount::getSessionId,
+                        GameSetRepository.SessionSetCount::getSetCount));
         return sessions.stream()
-                .map(s -> new InhouseSessionSummaryResponse(s.id(), s.startDate(), counts.getOrDefault(s.id(), 0L)))
+                .map(s -> new InhouseSessionSummaryResponse(s.id(), s.startDate(), counts.getOrDefault(s.id(), 0L),
+                        setCounts.getOrDefault(s.id(), 0L)))
                 .toList();
     }
 
@@ -95,6 +105,23 @@ public class InhouseSessionService {
     public DuelResponse getDuel(Long id) {
         return duelRepository.findById(id).map(DuelResponse::from)
                 .orElseThrow(() -> ApiException.notFound("DUEL_NOT_FOUND", "대결을 찾을 수 없습니다: " + id));
+    }
+
+    /**
+     * 세트가 하나도 없는 묶음만 지운다(삭제 표시된 세트도 세트로 센다 → 409 SESSION_HAS_SETS).
+     * 묶음 행을 잠가 "대결 생성"과 줄 세우고, 대결의 추출 작업 → 대결 → 묶음 순으로 지운다.
+     */
+    @Transactional
+    public void delete(Long id) {
+        sessionRepository.findByIdForUpdate(id).orElseThrow(() -> sessionNotFound(id));
+        Integer sets = jdbc.queryForObject("select count(*) from game_set where duel_id in "
+                + "(select id from duel where session_id = ?)", Integer.class, id);
+        if (sets != null && sets > 0) {
+            throw ApiException.conflict("SESSION_HAS_SETS", "세트가 있는 내전 묶음은 삭제할 수 없습니다.");
+        }
+        jdbc.update("delete from extraction_job where duel_id in (select id from duel where session_id = ?)", id);
+        jdbc.update("delete from duel where session_id = ?", id);
+        jdbc.update("delete from inhouse_session where id = ?", id);
     }
 
     private void throwIfDateTaken(LocalDate startDate) {

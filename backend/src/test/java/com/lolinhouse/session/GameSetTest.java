@@ -36,6 +36,15 @@ class GameSetTest {
     }
 
     @Test
+    void unknownDurationUsesQuestionMarkInFingerprint() {
+        GameSet set = GameSet.create(1L, 1, Side.BLUE, DuelTeam.TEAM1, null, DATE, null,
+                new DisplayedTotals(26, 8, 40, 39852), new DisplayedTotals(8, 26, 12, 29846), null, null);
+
+        assertThat(set.durationSec()).isNull();
+        assertThat(set.fingerprint()).isEqualTo("2026-10-11|?|8:29846|26:39852");
+    }
+
+    @Test
     void fingerprintIsSameWhenTeamsAreSwapped() {
         GameSet original = newSet();
         GameSet swapped = newSet(new DisplayedTotals(8, 26, 12, 29846), new DisplayedTotals(26, 8, 40, 39852), null,

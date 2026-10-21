@@ -43,4 +43,17 @@ public interface GameSetRepository extends JpaRepository<GameSet, Long> {
     @Query("select p.playerId from GameSetPlayer p where p.gameSet.id = :gameSetId "
             + "and p.team = com.lolinhouse.domain.DuelTeam.TEAM1")
     List<Long> findTeam1PlayerIds(@Param("gameSetId") Long gameSetId);
+
+    /** 묶음별 세트 수(삭제 표시된 세트 포함). 세트가 없는 묶음은 결과에 없다 = 0. 묶음 삭제 가능 여부 표시용. */
+    @Query("select d.sessionId as sessionId, count(g) as setCount from GameSet g, Duel d "
+            + "where g.duelId = d.id and d.sessionId in :sessionIds group by d.sessionId")
+    List<SessionSetCount> countBySessionIds(@Param("sessionIds") Collection<Long> sessionIds);
+
+    /** 묶음별 세트 수 조회 결과 한 줄. */
+    interface SessionSetCount {
+
+        Long getSessionId();
+
+        long getSetCount();
+    }
 }

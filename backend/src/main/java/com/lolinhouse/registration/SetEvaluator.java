@@ -45,11 +45,22 @@ public class SetEvaluator {
 
     public Evaluation evaluate(SetRegistrationRequest request, DuelState duel, PlayerDirectory players,
             CatalogSnapshot catalog, DuplicateLookup duplicates) {
+        return evaluate(request, duel, players, catalog, duplicates, false, null);
+    }
+
+    /** 결과창 없이 가져오는 세트: 경기 시간은 request.duration이 아니라 인자로 받고, null이면 "모름"으로 지문을 만든다. */
+    public Evaluation evaluateImport(SetRegistrationRequest request, Integer durationSec, DuelState duel,
+            PlayerDirectory players, CatalogSnapshot catalog, DuplicateLookup duplicates) {
+        return evaluate(request, duel, players, catalog, duplicates, true, durationSec);
+    }
+
+    private Evaluation evaluate(SetRegistrationRequest request, DuelState duel, PlayerDirectory players,
+            CatalogSnapshot catalog, DuplicateLookup duplicates, boolean imported, Integer importedDuration) {
         List<String> errors = new ArrayList<>();
         int setNo = duel.nextSetNo();
 
         LocalDate shotDate = parseDate(request.shotDate(), errors);
-        Integer durationSec = parseDuration(request.duration(), errors);
+        Integer durationSec = imported ? importedDuration : parseDuration(request.duration(), errors);
 
         TeamRows top = resolveRows("top", request.top(), players, errors);
         TeamRows bottom = resolveRows("bottom", request.bottom(), players, errors);
@@ -65,7 +76,7 @@ public class SetEvaluator {
 
         String fingerprint = null;
         DuplicateSet duplicate = null;
-        if (shotDate != null && durationSec != null) {
+        if (shotDate != null && (durationSec != null || imported)) {
             fingerprint = fingerprint(request, shotDate, durationSec, errors);
             if (fingerprint != null) {
                 duplicate = duplicates.find(fingerprint).orElse(null);
@@ -298,12 +309,13 @@ public class SetEvaluator {
 
     // ----- 7. 지문 -----
 
-    private static String fingerprint(SetRegistrationRequest request, LocalDate shotDate, int durationSec,
+    private static String fingerprint(SetRegistrationRequest request, LocalDate shotDate, Integer durationSec,
             List<String> errors) {
+        TeamTotals top = new TeamTotals(request.top().displayedKills(), request.top().displayedGold());
+        TeamTotals bottom = new TeamTotals(request.bottom().displayedKills(), request.bottom().displayedGold());
         try {
-            return SetFingerprint.of(shotDate, durationSec,
-                    new TeamTotals(request.top().displayedKills(), request.top().displayedGold()),
-                    new TeamTotals(request.bottom().displayedKills(), request.bottom().displayedGold())).canonical();
+            return (durationSec == null ? SetFingerprint.ofUnknownDuration(shotDate, top, bottom)
+                    : SetFingerprint.of(shotDate, durationSec, top, bottom)).canonical();
         } catch (IllegalArgumentException e) {
             errors.add("팀 킬·골드 합계가 올바르지 않습니다.");
             return null;

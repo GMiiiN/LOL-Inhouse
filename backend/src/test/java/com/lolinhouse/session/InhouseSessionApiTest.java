@@ -5,6 +5,12 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import com.jayway.jsonpath.JsonPath;
 import com.lolinhouse.IntegrationTest;
+import com.lolinhouse.domain.DuelTeam;
+import com.lolinhouse.domain.Position;
+import com.lolinhouse.domain.Side;
+import com.lolinhouse.ingest.job.ExtractionJob;
+import com.lolinhouse.ingest.job.ExtractionJobRepository;
+import com.lolinhouse.session.GameSet.DisplayedTotals;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -16,6 +22,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -34,6 +41,12 @@ class InhouseSessionApiTest {
 
     @Autowired
     MockMvc mockMvc;
+    @Autowired
+    DuelRepository duels;
+    @Autowired
+    GameSetRepository gameSets;
+    @Autowired
+    ExtractionJobRepository jobs;
 
     /** 3000-01-01 이후 임의 날짜(MySQL DATE 범위 안). 다른 테스트와 겹칠 확률은 무시할 수준. */
     static LocalDate randomDate() {
@@ -182,5 +195,114 @@ class InhouseSessionApiTest {
                         .content("{\"startDate\":\"" + randomDate() + "\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+    }
+
+    // ---------- 묶음 삭제 ----------
+
+    GameSet saveSet(long duelId, boolean deleted) {
+        // 지문(날짜·시간·팀 합계)이 유효 세트끼리 UNIQUE라 경기 시간을 무작위로 둔다
+        GameSet set = GameSet.create(duelId, 1, Side.BLUE, DuelTeam.TEAM1, DuelTeam.TEAM1, LocalDate.of(2999, 1, 1),
+                ThreadLocalRandom.current().nextInt(1, 2_000_000_000), new DisplayedTotals(1, 1, 1, 1),
+                new DisplayedTotals(1, 1, 1, 1), null, null);
+        if (deleted) {
+            set.markDeleted();
+        }
+        return gameSets.saveAndFlush(set);
+    }
+
+    long createDuelId(int sessionId) throws Exception {
+        String body = createDuel(sessionId).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.id")).longValue();
+    }
+
+    ResultActions deleteSession(long id) throws Exception {
+        return mockMvc.perform(delete("/api/admin/inhouse-sessions/" + id).with(csrf()));
+    }
+
+    java.util.List<Object> listedRows(int id) throws Exception {
+        String body = mockMvc.perform(get("/api/admin/inhouse-sessions")).andReturn().getResponse().getContentAsString();
+        return JsonPath.read(body, "$[?(@.id==" + id + ")]");
+    }
+
+    @Test
+    void deleteEmptySessionReturns204AndDisappearsFromList() throws Exception {
+        int id = createSessionId(randomDate());
+        assertThat(listedRows(id)).hasSize(1);
+
+        deleteSession(id).andExpect(status().isNoContent());
+
+        assertThat(listedRows(id)).isEmpty();
+    }
+
+    @Test
+    void deleteSessionWithOnlyEmptyDuelsDeletesTheDuelsToo() throws Exception {
+        int id = createSessionId(randomDate());
+        long duelId = createDuelId(id);
+
+        deleteSession(id).andExpect(status().isNoContent());
+
+        assertThat(duels.existsById(duelId)).isFalse();
+        assertThat(listedRows(id)).isEmpty();
+    }
+
+    @Test
+    void deleteSessionAlsoDeletesExtractionJobsOfItsDuels() throws Exception {
+        int id = createSessionId(randomDate());
+        long duelId = createDuelId(id);
+        long jobId = jobs.saveAndFlush(ExtractionJob.queued(duelId, Side.BLUE, Position.ADC,
+                "c".repeat(64), "cc/key.png")).id();
+
+        deleteSession(id).andExpect(status().isNoContent());
+
+        assertThat(jobs.existsById(jobId)).isFalse();
+        assertThat(duels.existsById(duelId)).isFalse();
+    }
+
+    @Test
+    void deleteSessionWithSetsIsConflictAndKeepsEverything() throws Exception {
+        int id = createSessionId(randomDate());
+        long duelId = createDuelId(id);
+        saveSet(duelId, false);
+
+        deleteSession(id).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SESSION_HAS_SETS"));
+
+        assertThat(duels.existsById(duelId)).isTrue();
+        assertThat(listedRows(id)).hasSize(1);
+    }
+
+    @Test
+    void deleteSessionWithOnlySoftDeletedSetsIsStillConflict() throws Exception {
+        int id = createSessionId(randomDate());
+        saveSet(createDuelId(id), true);
+
+        deleteSession(id).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SESSION_HAS_SETS"));
+    }
+
+    @Test
+    void listReportsSetCountIncludingSoftDeletedSets() throws Exception {
+        int id = createSessionId(randomDate());
+        saveSet(createDuelId(id), true);
+
+        String list = mockMvc.perform(get("/api/admin/inhouse-sessions")).andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<java.util.List<Integer>>read(list, "$[?(@.id==" + id + ")].setCount")).containsExactly(1);
+    }
+
+    @Test
+    void deleteUnknownSessionIsNotFound() throws Exception {
+        deleteSession(999_999_999L).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"));
+    }
+
+    @Test
+    @WithAnonymousUser
+    void deleteSessionAnonymousIsUnauthorized() throws Exception {
+        mockMvc.perform(delete("/api/admin/inhouse-sessions/1").with(csrf())).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteSessionWithoutCsrfIsForbidden() throws Exception {
+        int id = createSessionId(randomDate());
+        mockMvc.perform(delete("/api/admin/inhouse-sessions/" + id)).andExpect(status().isForbidden());
+        assertThat(listedRows(id)).hasSize(1);
     }
 }

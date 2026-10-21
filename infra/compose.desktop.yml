@@ -1,0 +1,65 @@
+# 데스크탑 운영용 묶음: mysql + backend + web(nginx). 실행(저장소 루트에서):
+#   docker compose -f infra/compose.desktop.yml --env-file .env up -d --build
+# 개발용 infra/docker-compose.yml과 project name·볼륨을 분리해 데이터가 섞이지 않게 한다.
+# 바깥에 열리는 포트는 web의 127.0.0.1:WEB_PORT 하나뿐이다(터널도 같은 PC의 이 포트에 붙인다).
+name: lol-inhouse-desktop
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # 개발용 compose와 같은 점검: 앱 계정으로 TCP 접속해 대상 DB에 쿼리가 되는지 본다($$는 compose 치환 방지)
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" -e 'SELECT 1' \"$$MYSQL_DATABASE\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    # .env 전체를 환경변수로 주입한다. 컨테이너 안에는 .env 파일이 없어 spring.config.import는 무시된다.
+    env_file: ../.env
+    # env_file 값보다 environment가 우선한다: 컨테이너 안의 주소·경로로 덮어쓴다
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      IMAGE_STORE_DIR: /app/data/images
+      DDRAGON_CACHE_DIR: /app/data/ddragon
+      FORWARD_HEADERS_STRATEGY: native
+    volumes:
+      # 결과창 이미지(친구 닉네임 포함)·캐시. 백업 스크립트가 data/images를 바로 압축한다
+      - ../data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  web:
+    build: ../frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8088}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mysql-data:

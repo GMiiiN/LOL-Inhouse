@@ -1,8 +1,8 @@
 // 내전 관리 화면 테스트: 목록, 묶음 생성 충돌 안내, 새 대결(피어리스 방식 선택)
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
-import { jsonResponse, mockFetch, problemResponse } from '../../test/mockFetch'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { jsonResponse, mockFetch, noContent, problemResponse } from '../../test/mockFetch'
 import { renderApp } from '../../test/renderApp'
 
 const me = { 'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }) }
@@ -13,8 +13,8 @@ describe('SessionsPage', () => {
       ...me,
       'GET /api/admin/inhouse-sessions': () =>
         jsonResponse(200, [
-          { id: 2, startDate: '2026-10-15', duelCount: 3 },
-          { id: 1, startDate: '2026-10-01', duelCount: 1 },
+          { id: 2, startDate: '2026-10-15', duelCount: 3, setCount: 2 },
+          { id: 1, startDate: '2026-10-01', duelCount: 1, setCount: 1 },
         ]),
     })
     renderApp('/admin')
@@ -46,7 +46,7 @@ describe('SessionsPage', () => {
     const { calls } = mockFetch({
       ...me,
       'GET /api/admin/inhouse-sessions': () => jsonResponse(200, []),
-      'POST /api/admin/inhouse-sessions': () => jsonResponse(201, { id: 5, startDate: '2026-10-20', duelCount: 0 }),
+      'POST /api/admin/inhouse-sessions': () => jsonResponse(201, { id: 5, startDate: '2026-10-20', duelCount: 0, setCount: 0 }),
       'GET /api/admin/inhouse-sessions/5': () => jsonResponse(200, { id: 5, startDate: '2026-10-20', duels: [] }),
     })
     const { router } = renderApp('/admin')
@@ -59,6 +59,76 @@ describe('SessionsPage', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/sessions/5'))
     const post = calls.find((c) => c.method === 'POST' && c.path === '/api/admin/inhouse-sessions')
     expect(JSON.parse(post?.body ?? '')).toEqual({ startDate: '2026-10-20' })
+  })
+})
+
+describe('SessionsPage 묶음 삭제', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  const listRoute = (rows: unknown[]) => ({ 'GET /api/admin/inhouse-sessions': () => jsonResponse(200, rows) })
+
+  it('세트가 없는 묶음에만 삭제 버튼을 보여 준다', async () => {
+    mockFetch({
+      ...me,
+      ...listRoute([
+        { id: 2, startDate: '2026-10-21', duelCount: 1, setCount: 0 },
+        { id: 1, startDate: '2026-10-01', duelCount: 1, setCount: 3 },
+      ]),
+    })
+    renderApp('/admin')
+
+    expect(await screen.findByRole('button', { name: '2026-10-21 묶음 삭제' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '2026-10-01 묶음 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('확인을 취소하면 서버를 부르지 않는다', async () => {
+    const user = userEvent.setup()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { calls } = mockFetch({
+      ...me,
+      ...listRoute([{ id: 2, startDate: '2026-10-21', duelCount: 0, setCount: 0 }]),
+    })
+    renderApp('/admin')
+
+    await user.click(await screen.findByRole('button', { name: '2026-10-21 묶음 삭제' }))
+
+    expect(confirm).toHaveBeenCalledWith('2026-10-21 내전 묶음을 삭제할까요? 되돌릴 수 없어요.')
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false)
+  })
+
+  it('확인하면 DELETE하고 목록을 새로 불러와 행이 사라진다', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    let rows = [{ id: 2, startDate: '2026-10-21', duelCount: 0, setCount: 0 }]
+    const { calls } = mockFetch({
+      ...me,
+      'GET /api/admin/inhouse-sessions': () => jsonResponse(200, rows),
+      'DELETE /api/admin/inhouse-sessions/2': () => {
+        rows = []
+        return noContent()
+      },
+    })
+    renderApp('/admin')
+
+    await user.click(await screen.findByRole('button', { name: '2026-10-21 묶음 삭제' }))
+
+    expect(await screen.findByText('아직 내전 묶음이 없습니다.')).toBeInTheDocument()
+    expect(calls.filter((c) => c.method === 'DELETE')).toHaveLength(1)
+  })
+
+  it('서버가 409 SESSION_HAS_SETS로 거절하면 안내 문구를 보여 준다', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    mockFetch({
+      ...me,
+      ...listRoute([{ id: 2, startDate: '2026-10-21', duelCount: 1, setCount: 0 }]),
+      'DELETE /api/admin/inhouse-sessions/2': () => problemResponse(409, 'SESSION_HAS_SETS'),
+    })
+    renderApp('/admin')
+
+    await user.click(await screen.findByRole('button', { name: '2026-10-21 묶음 삭제' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('세트가 있는 묶음은 지울 수 없어요.')
   })
 })
 

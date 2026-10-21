@@ -24,6 +24,10 @@ export const updateProfile = (id: number, body: PlayerProfileRequest) =>
 export const deleteProfile = (id: number) =>
   apiRequest<void>(`/api/admin/player-profiles/${id}`, { method: 'DELETE' })
 
+// 담당자: 미등록 선수(source)의 기록·닉네임을 기존 선수(target)에게 합친다. 되돌릴 수 없다.
+export const mergePlayer = (sourceId: number, targetId: number) =>
+  apiRequest<PlayerProfile>(`/api/admin/players/${sourceId}/merge`, { method: 'POST', json: { targetId } })
+
 // 담당자: 점수표. 14칸을 모두 보내는 전체 치환이다.
 export const putScoreTable = (body: ScoreTableRequest) =>
   apiRequest<ScoreTableResponse>('/api/admin/score-table', { method: 'PUT', json: body })

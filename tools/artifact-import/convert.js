@@ -82,19 +82,40 @@ function buildRequest(converted, existing) {
   }
 }
 
-// 가져오기 계획: 선수마다 create/update/skip과 사유. existingProfiles는 GET player-profiles 결과(dry-run은 [])
+// 실명이 없는 기존 선수(세트 등록 때 닉네임으로 생긴 미등록 선수) 중 닉네임이 겹치는 선수들
+function unregisteredMatches(c, unregistered) {
+  const wanted = new Set(c.nicknames.map(normNick))
+  return unregistered.filter((e) => e.aliases.some((a) => wanted.has(normNick(a.nickname))))
+}
+
+// 가져오기 계획: 선수마다 create/update/adopt/skip과 사유. existingProfiles는 GET player-profiles 결과(dry-run은 [])
+// adopt: 이름이 같은 선수는 없지만 닉네임이 겹치는 미등록 선수가 정확히 하나면, 그 선수에 실명을 붙여 등록한다(세트 기록 유지).
 function planImport(players, existingProfiles) {
   const byName = new Map()
-  for (const e of existingProfiles) if (e.realName) byName.set(e.realName.trim(), e)
+  const unregistered = []
+  for (const e of existingProfiles) {
+    if (e.realName) byName.set(e.realName.trim(), e)
+    else unregistered.push(e)
+  }
   return players.map((raw, index) => {
     const c = convertPlayer(raw)
     const base = { index: index + 1, name: c.name }
     if (!c.name) return { ...base, action: 'skip', reason: 'NO_NAME' }
-    const existing = byName.get(c.name)
+    let existing = byName.get(c.name)
+    let action = existing ? 'update' : 'create'
+    if (!existing) {
+      const matches = unregisteredMatches(c, unregistered)
+      if (matches.length > 1) return { ...base, action: 'skip', reason: 'MULTIPLE_UNREGISTERED' }
+      if (matches.length === 1) {
+        existing = matches[0]
+        action = 'adopt'
+      }
+    }
     if (!existing && Object.keys(c.lanes).length === 0) return { ...base, action: 'skip', reason: 'NO_LANE' }
     if (!existing && c.nicknames.length === 0) return { ...base, action: 'skip', reason: 'NO_NICKNAME' }
     const { body, dropped } = buildRequest(c, existing)
-    return { ...base, action: existing ? 'update' : 'create', id: existing && existing.id, body, dropped, invalidLanes: c.invalidLanes }
+    if (action === 'adopt') body.realName = c.name
+    return { ...base, action, id: existing && existing.id, body, dropped, invalidLanes: c.invalidLanes }
   })
 }
 

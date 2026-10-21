@@ -17,7 +17,7 @@ public record SetRow(
         Side team1Side,
         DuelTeam winnerTeam,
         LocalDate shotDate,
-        int durationSec,
+        Integer durationSec,
         int team1Kills,
         int team1Deaths,
         int team1Assists,
