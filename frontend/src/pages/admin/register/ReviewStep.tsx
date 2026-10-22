@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom'
 import { listPlayers } from '../../../api/admin'
 import { ApiError } from '../../../api/client'
 import { PLAYERS_KEY, PUBLIC_KEY, registrationContextKey, SESSIONS_KEY } from '../../../api/queryKeys'
-import { registerSet } from '../../../api/registration'
+import { checkSet, registerSet } from '../../../api/registration'
 import type {
   ChampionList,
   DraftResponse,
@@ -83,7 +83,7 @@ export function ReviewStep({ duelId, draft, context, champions, imageUrl, chosen
   const requestJson = useMemo(() => JSON.stringify(request), [request])
   const initialJson = useMemo(() => JSON.stringify(buildRequest(initReviewState(draft.defaults), null)), [draft])
   const check = useDebouncedCheck(
-    duelId,
+    (body) => checkSet(duelId, body),
     request,
     `${requestJson}#${recheck}`,
     { key: `${initialJson}#0`, evaluation: draft.evaluation },
@@ -347,7 +347,7 @@ export function ReviewStep({ duelId, draft, context, champions, imageUrl, chosen
           players={players.data}
           issues={slots}
           aliasConflicts={aliasConflicts}
-          onUpdate={(fn) => setState(fn)}
+          onUpdate={(fn) => setState((s) => ({ ...s, ...fn(s) }))}
         />
       ))}
 

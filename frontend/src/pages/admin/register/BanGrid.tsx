@@ -1,7 +1,7 @@
 // 한 팀의 밴 5칸. 결과창 배치(윗줄 3칸, 아랫줄 2칸)를 따르고 칸마다 턴 라벨(B1~R5)을 붙인다.
 // 라벨은 위쪽 팀 진영으로 계산한 표시용이고, 턴 확정은 서버가 한다. 10칸 모두 필수이며 1순위로 미리 채워진다.
 import type { ChampionInfo, DraftBan } from '../../../api/registrationTypes'
-import { banKey, setBan, type ReviewState, type TeamKey } from './reviewModel'
+import { banKey, setBan, type TeamsState, type TeamKey } from './reviewModel'
 import { ChampionPicker } from './ChampionPicker'
 
 type BanGridProps = {
@@ -14,7 +14,7 @@ type BanGridProps = {
   champions: ChampionInfo[]
   championsById: ReadonlyMap<string, ChampionInfo>
   issues: Record<string, string[]>
-  onUpdate: (change: (state: ReviewState) => ReviewState) => void
+  onUpdate: (change: (state: TeamsState) => TeamsState) => void
 }
 
 const EMPTY_SET: ReadonlySet<string> = new Set()

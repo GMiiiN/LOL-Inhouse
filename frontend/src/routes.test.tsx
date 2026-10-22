@@ -2,6 +2,8 @@
 import { cleanup, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { jsonResponse, mockFetch } from './test/mockFetch'
+import { champions } from './test/registrationFixtures'
+import { buildSetForm } from './test/setFormFixtures'
 import { DEFAULT_SCORE_TABLE } from './test/tierListFixtures'
 import { renderApp } from './test/renderApp'
 
@@ -30,6 +32,18 @@ describe('routes', () => {
       expect(screen.getByRole('navigation', { name: '공개 메뉴' })).toHaveTextContent('챔피언')
       cleanup()
     }
+  })
+
+  it('로그인한 상태에서 /admin/sets/:setId/edit는 세트 수정 화면을 그린다', async () => {
+    mockFetch({
+      'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
+      'GET /api/admin/sets/7/form': () => jsonResponse(200, buildSetForm({ deleted: true })),
+      'GET /api/admin/champions': () => jsonResponse(200, champions),
+    })
+    renderApp('/admin/sets/7/edit')
+
+    expect(await screen.findByRole('heading', { level: 1, name: '세트 수정' })).toBeInTheDocument()
+    expect(await screen.findByText('대결 2 · 2세트 수정')).toBeInTheDocument()
   })
 
   it('/tiers는 로그인 없이 공개 헤더 안에서 열리고 편집 버튼이 없다', async () => {

@@ -12,6 +12,11 @@ public final class RecordEditErrorCodes {
     /** 409 같은 대결 같은 번호의 유효 세트가 있어 복구할 수 없음(existingSetId) */
     public static final String RESTORE_SET_NO_CONFLICT = "RESTORE_SET_NO_CONFLICT";
 
+    /** 409 삭제된 세트를 수정하려 함 */
+    public static final String SET_DELETED = "SET_DELETED";
+    /** 409 폼을 받은 뒤 다른 요청이 세트를 먼저 바꿈(expectedUpdatedAt 불일치) */
+    public static final String SET_MODIFIED = "SET_MODIFIED";
+
     private RecordEditErrorCodes() {
     }
 }

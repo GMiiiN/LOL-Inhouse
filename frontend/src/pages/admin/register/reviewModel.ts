@@ -15,6 +15,8 @@ import { POSITIONS, type Position } from '../../../api/types'
 
 // 확인 화면이 들고 있는 편집 상태 = 저장 명령 그대로(newDuel만 따로 둔다). 키는 (팀, 결과창 행 번호)다.
 export type ReviewState = Omit<SetRegistrationRequest, 'newDuel'>
+// 팀 표·밴 칸이 다루는 최소 상태. 세트 수정 화면(setFormModel)도 이 모양을 그대로 쓴다.
+export type TeamsState = Pick<ReviewState, 'topSide' | 'topResult' | 'shotDate' | 'duration' | 'top' | 'bottom'>
 export type TeamKey = 'top' | 'bottom'
 export const TEAM_KEYS: readonly TeamKey[] = ['top', 'bottom']
 
@@ -26,7 +28,7 @@ export type ReviewIssues = { errors: string[]; warnings: string[] }
 
 // ---------- 초기 상태·정렬 ----------
 
-function cloneTeam(team: TeamInput): TeamInput {
+export function cloneTeam(team: TeamInput): TeamInput {
   return {
     ...team,
     rows: [...team.rows].sort((a, b) => a.screenRow - b.screenRow).map((row) => ({ ...row })),
@@ -53,28 +55,28 @@ export function rowsByLane(team: TeamInput): RowInput[] {
   return [...team.rows].sort((a, b) => POSITIONS.indexOf(a.position) - POSITIONS.indexOf(b.position))
 }
 
-export function updateRow(state: ReviewState, team: TeamKey, screenRow: number, patch: Partial<RowInput>): ReviewState {
+export function updateRow<S extends TeamsState>(state: S, team: TeamKey, screenRow: number, patch: Partial<RowInput>): S {
   const target = state[team]
   const rows = target.rows.map((row) => (row.screenRow === screenRow ? { ...row, ...patch } : row))
   return { ...state, [team]: { ...target, rows } }
 }
 
 // 행 하나를 함수로 바꾼다(선수 선택 같은 도우미 함수 결과를 그대로 넣을 때)
-export function replaceRow(state: ReviewState, team: TeamKey, next: RowInput): ReviewState {
+export function replaceRow<S extends TeamsState>(state: S, team: TeamKey, next: RowInput): S {
   const target = state[team]
   const rows = target.rows.map((row) => (row.screenRow === next.screenRow ? next : row))
   return { ...state, [team]: { ...target, rows } }
 }
 
-export function updateTeam(
-  state: ReviewState,
+export function updateTeam<S extends TeamsState>(
+  state: S,
   team: TeamKey,
   patch: Partial<Omit<TeamInput, 'rows' | 'bans'>>,
-): ReviewState {
+): S {
   return { ...state, [team]: { ...state[team], ...patch } }
 }
 
-export function setBan(state: ReviewState, team: TeamKey, slot: number, championKey: string | null): ReviewState {
+export function setBan<S extends TeamsState>(state: S, team: TeamKey, slot: number, championKey: string | null): S {
   const bans = state[team].bans.map((ban, index) => (index === slot - 1 ? championKey : ban))
   return { ...state, [team]: { ...state[team], bans } }
 }
@@ -82,7 +84,7 @@ export function setBan(state: ReviewState, team: TeamKey, slot: number, champion
 // ---------- 포지션 ----------
 
 // 같은 팀에서 screenRow 행의 포지션을 바꾸면, 그 포지션을 갖고 있던 행과 서로 맞바꾼다(PositionAssignment.swapPositions와 같은 규칙).
-export function swapPosition(state: ReviewState, team: TeamKey, screenRow: number, position: Position): ReviewState {
+export function swapPosition<S extends TeamsState>(state: S, team: TeamKey, screenRow: number, position: Position): S {
   const rows = state[team].rows
   const from = rows.find((row) => row.screenRow === screenRow)
   const other = rows.find((row) => row.position === position && row.screenRow !== screenRow)
@@ -216,17 +218,18 @@ export function setRowNickname(row: RowInput, draftRow: DraftRow, nickname: stri
 // ---------- 저장 명령 ----------
 
 // 화면 상태 → 서버로 보낼 명령. resolution과 playerId·addAlias가 서로 어긋나지 않게 정리한다.
+function cleanRow(row: RowInput): RowInput {
+  const nickname = row.nickname.trim()
+  if (row.resolution === 'EXISTING' && row.playerId !== null) return { ...row, nickname }
+  if (row.resolution === 'NEW') return { ...row, nickname, playerId: null, addAlias: false }
+  return { ...row, nickname, resolution: 'UNRESOLVED', playerId: null, addAlias: false }
+}
+
+export function cleanTeam(team: TeamInput): TeamInput {
+  return { ...team, rows: [...team.rows].sort((a, b) => a.screenRow - b.screenRow).map(cleanRow) }
+}
+
 export function buildRequest(state: ReviewState, newDuel: NewDuelOption | null): SetRegistrationRequest {
-  const cleanRow = (row: RowInput): RowInput => {
-    const nickname = row.nickname.trim()
-    if (row.resolution === 'EXISTING' && row.playerId !== null) return { ...row, nickname }
-    if (row.resolution === 'NEW') return { ...row, nickname, playerId: null, addAlias: false }
-    return { ...row, nickname, resolution: 'UNRESOLVED', playerId: null, addAlias: false }
-  }
-  const cleanTeam = (team: TeamInput): TeamInput => ({
-    ...team,
-    rows: [...team.rows].sort((a, b) => a.screenRow - b.screenRow).map(cleanRow),
-  })
   const request: SetRegistrationRequest = { ...state, top: cleanTeam(state.top), bottom: cleanTeam(state.bottom) }
   return newDuel ? { ...request, newDuel } : request
 }
@@ -247,7 +250,7 @@ function countBy(map: Map<string, number>, key: string | null) {
 }
 
 // 칸마다 문제 문구를 모은다. 키는 rowKey/banKey. 빈 챔피언·밴, 세트 안 중복, 제한 챔피언, 미확정 선수, 같은 선수 중복.
-export function slotIssues(state: ReviewState, restricted: ReadonlySet<string>): Record<string, string[]> {
+export function slotIssues(state: TeamsState, restricted: ReadonlySet<string>): Record<string, string[]> {
   const issues: Record<string, string[]> = {}
   const add = (key: string, message: string) => {
     if (!issues[key]) issues[key] = []

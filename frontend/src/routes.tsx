@@ -10,6 +10,7 @@ import { RecordManagePage } from './pages/admin/history/RecordManagePage'
 import { PlayerTierAdminPage } from './pages/admin/players/PlayerTierAdminPage'
 import { SessionDetailPage } from './pages/admin/SessionDetailPage'
 import { SessionsPage } from './pages/admin/SessionsPage'
+import { SetEditPage } from './pages/admin/set-form/SetEditPage'
 import { SetRegisterPage } from './pages/admin/register/SetRegisterPage'
 import { ScoreSettingsPage } from './pages/admin/score/ScoreSettingsPage'
 import { PlayerProfilePage } from './pages/players/PlayerProfilePage'
@@ -43,6 +44,7 @@ export const routes: RouteObject[] = [
       { path: '/admin', element: <SessionsPage /> },
       { path: '/admin/sessions/:sessionId', element: <SessionDetailPage /> },
       { path: '/admin/duels/:duelId/sets/new', element: <SetRegisterPage /> },
+      { path: '/admin/sets/:setId/edit', element: <SetEditPage /> },
       { path: '/admin/players', element: <PlayerTierAdminPage /> },
       { path: '/admin/score', element: <ScoreSettingsPage /> },
       { path: '/admin/history', element: <RecordManagePage /> },

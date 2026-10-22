@@ -203,7 +203,8 @@ public class SetRegistrationService {
     }
 
     // 새 선수를 먼저 만들고(NEW), 별칭 추가를 요청한 기존 선수에게 별칭을 붙인다. 충돌은 PlayerService가 409로 던져 전체가 되돌아간다
-    private Long[] confirmPlayers(TeamInput team, List<PlayerRef> created, List<PlayerRef> aliases) {
+    /** 저장된 세트 수정(SetEditService)도 같은 규칙으로 쓴다. */
+    public Long[] confirmPlayers(TeamInput team, List<PlayerRef> created, List<PlayerRef> aliases) {
         Long[] ids = new Long[team.rows().size()];
         for (int i = 0; i < ids.length; i++) {
             RowInput row = team.rows().get(i);

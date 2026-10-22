@@ -14,6 +14,26 @@ afterEach(() => {
 })
 
 describe('SetAdminActions', () => {
+  it('담당자에게는 수정 링크가 수정 화면을 가리킨다', async () => {
+    mockFetch({
+      'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
+      'GET /api/sets/7': () => jsonResponse(200, setDetail),
+    })
+    renderApp('/sets/7')
+    expect(await screen.findByRole('link', { name: '수정' })).toHaveAttribute('href', '/admin/sets/7/edit')
+  })
+
+  it('방문자에게는 수정 링크도 없다', async () => {
+    const { calls } = mockFetch({
+      'GET /api/admin/me': () => jsonResponse(401, { status: 401, code: 'UNAUTHENTICATED' }),
+      'GET /api/sets/7': () => jsonResponse(200, setDetail),
+    })
+    renderApp('/sets/7')
+    await waitFor(() => expect(calls.some((c) => c.path === '/api/admin/me')).toBe(true))
+    await screen.findByText(/결과창 날짜/)
+    expect(screen.queryByRole('link', { name: '수정' })).toBeNull()
+  })
+
   it('방문자에게는 삭제 버튼이 없다', async () => {
     const { calls } = mockFetch({
       'GET /api/admin/me': () => jsonResponse(401, { status: 401, code: 'UNAUTHENTICATED' }),

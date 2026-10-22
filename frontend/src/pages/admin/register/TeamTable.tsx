@@ -5,6 +5,7 @@ import type { ChampionInfo, DraftTeam, RowInput, TeamInput } from '../../../api/
 import { POSITION_LABEL, POSITIONS, type Player } from '../../../api/types'
 import { BanGrid } from './BanGrid'
 import { ChampionPicker } from './ChampionPicker'
+import { ManualPlayerPicker } from '../set-form/ManualPlayerPicker'
 import { PlayerPicker } from './PlayerPicker'
 import {
   replaceRow,
@@ -13,7 +14,7 @@ import {
   swapPosition,
   updateRow,
   updateTeam,
-  type ReviewState,
+  type TeamsState,
   type TeamKey,
 } from './reviewModel'
 
@@ -22,7 +23,7 @@ type TeamTableProps = {
   teamLabel: string // 예: "위쪽 팀"
   heading: string // 예: "위쪽 팀 · A팀 · 블루"
   team: TeamInput
-  draftTeam: DraftTeam
+  draftTeam: DraftTeam | null // null이면 초안 없는 화면(세트 수정·직접 입력): 선수는 ManualPlayerPicker로 고른다
   banLabels: string[]
   imageUrl: string | null
   champions: ChampionInfo[]
@@ -31,7 +32,7 @@ type TeamTableProps = {
   players: Player[] | undefined
   issues: Record<string, string[]>
   aliasConflicts: ReadonlyMap<string, string> // 정규화한 닉네임 → 설명 (저장 때 ALIAS_CONFLICT)
-  onUpdate: (change: (state: ReviewState) => ReviewState) => void
+  onUpdate: (change: (state: TeamsState) => TeamsState) => void
 }
 
 function toCount(value: string): number {
@@ -113,7 +114,7 @@ export function TeamTable({
       </div>
 
       {rowsByLane(team).map((row: RowInput) => {
-        const draftRow = draftTeam.rows.find((d) => d.screenRow === row.screenRow)
+        const draftRow = draftTeam?.rows.find((d) => d.screenRow === row.screenRow)
         const rowLabel = `${teamLabel} 결과창 ${row.screenRow}행`
         const slotIssues = issues[rowKey(teamKey, row.screenRow)] ?? []
         const conflict = aliasConflicts.get(row.nickname.trim().toLowerCase()) ?? null
@@ -136,7 +137,15 @@ export function TeamTable({
               </select>
             </div>
 
-            {draftRow ? (
+            {draftTeam === null ? (
+              <ManualPlayerPicker
+                rowLabel={rowLabel}
+                row={row}
+                players={players}
+                conflict={conflict}
+                onChange={(next) => onUpdate((state) => replaceRow(state, teamKey, next))}
+              />
+            ) : draftRow ? (
               <PlayerPicker
                 rowLabel={rowLabel}
                 row={row}
@@ -182,7 +191,7 @@ export function TeamTable({
         teamKey={teamKey}
         teamLabel={teamLabel}
         bans={team.bans}
-        draftBans={draftTeam.bans}
+        draftBans={draftTeam?.bans ?? []}
         labels={banLabels}
         imageUrl={imageUrl}
         champions={champions}

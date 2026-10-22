@@ -116,5 +116,6 @@
 .deleted-set-actions { display: flex; gap: 8px; align-items: center; }
 .deleted-set-note-row td { padding-top: 0; }
 .set-admin-actions { display: inline-flex; flex-direction: column; gap: 8px; }
-.set-admin-actions button, .deleted-set-actions button { background: transparent; color: var(--muted); border: 1px solid var(--line2); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.set-admin-actions button, .set-admin-actions a, .deleted-set-actions button { background: transparent; color: var(--muted); border: 1px solid var(--line2); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.set-admin-actions a { text-decoration: none; text-align: center; }
 .set-admin-actions button:hover:not(:disabled), .deleted-set-actions button:hover:not(:disabled) { color: var(--ink); }

@@ -66,14 +66,19 @@ function DuelSetTable({ sets, duelId, duelSeq }: { sets: AdminSetSummary[]; duel
                   복구
                 </button>
               ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-label={`세트 ${set.setNo} 삭제`}
-                  onClick={() => onDelete(set)}
-                >
-                  삭제
-                </button>
+                <>
+                  <Link to={`/admin/sets/${set.setId}/edit`} aria-label={`세트 ${set.setNo} 수정`}>
+                    수정
+                  </Link>{' '}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={`세트 ${set.setNo} 삭제`}
+                    onClick={() => onDelete(set)}
+                  >
+                    삭제
+                  </button>
+                </>
               )}
             </td>
           </tr>

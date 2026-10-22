@@ -163,11 +163,57 @@ public class GameSet {
         set.team2DisplayedGold = team2.gold();
         set.imageHash = imageHash;
         set.imageKey = imageKey;
+        set.fingerprint = fingerprintOf(shotDate, durationSec, team1, team2);
+        return set;
+    }
+
+    private static String fingerprintOf(LocalDate shotDate, Integer durationSec, DisplayedTotals team1,
+            DisplayedTotals team2) {
         TeamTotals totals1 = new TeamTotals(team1.kills(), team1.gold());
         TeamTotals totals2 = new TeamTotals(team2.kills(), team2.gold());
-        set.fingerprint = (durationSec == null ? SetFingerprint.ofUnknownDuration(shotDate, totals1, totals2)
+        return (durationSec == null ? SetFingerprint.ofUnknownDuration(shotDate, totals1, totals2)
                 : SetFingerprint.of(shotDate, durationSec, totals1, totals2)).canonical();
-        return set;
+    }
+
+    /**
+     * 수정: 메타·합계를 바꾸고 지문을 다시 계산한다. 대결·세트 번호·이미지·등록 시각은 바꾸지 않는다.
+     * 선수·밴만 바뀌는 수정에서도 동시 수정 검사(expectedUpdatedAt)가 통하도록 updatedAt을 직전 값보다 항상 뒤로 명시 갱신한다.
+     */
+    public void revise(Side team1Side, DuelTeam winnerTeam, DuelTeam topTeam, LocalDate shotDate,
+            Integer durationSec, DisplayedTotals team1, DisplayedTotals team2) {
+        if (deletedAt != null) {
+            throw new IllegalStateException("삭제된 세트는 수정할 수 없습니다.");
+        }
+        if (team1Side == null || winnerTeam == null || shotDate == null || team1 == null || team2 == null) {
+            throw new IllegalArgumentException("세트의 필수 값이 비어 있습니다.");
+        }
+        this.team1Side = team1Side;
+        this.winnerTeam = winnerTeam;
+        this.topTeam = topTeam;
+        this.shotDate = shotDate;
+        this.durationSec = durationSec;
+        this.team1DisplayedKills = team1.kills();
+        this.team1DisplayedDeaths = team1.deaths();
+        this.team1DisplayedAssists = team1.assists();
+        this.team1DisplayedGold = team1.gold();
+        this.team2DisplayedKills = team2.kills();
+        this.team2DisplayedDeaths = team2.deaths();
+        this.team2DisplayedAssists = team2.assists();
+        this.team2DisplayedGold = team2.gold();
+        this.fingerprint = fingerprintOf(shotDate, durationSec, team1, team2);
+        this.updatedAt = advance(updatedAt);
+    }
+
+    /** 수정 시각을 반드시 앞으로 옮긴다(같은 시각·시계 역행이어도 1μs). 동시 수정 검사가 이 값의 변화에 기댄다. */
+    static Instant advance(Instant previous) {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        return previous != null && !now.isAfter(previous) ? previous.plus(1, ChronoUnit.MICROS) : now;
+    }
+
+    /** 선수·밴을 모두 비운다. 새 행을 넣기 전에 flush로 DELETE를 먼저 보내야 UNIQUE에 걸리지 않는다. */
+    public void clearRecords() {
+        players.clear();
+        bans.clear();
     }
 
     /** 이 세트에 선수 기록 한 줄을 추가한다. 10명이 맞는지·포지션 중복은 도메인 검증과 DB UNIQUE가 본다. */
@@ -292,6 +338,6 @@ public class GameSet {
 
     @PreUpdate
     void onUpdate() {
-        updatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        updatedAt = advance(updatedAt);
     }
 }

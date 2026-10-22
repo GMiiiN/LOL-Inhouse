@@ -36,6 +36,18 @@ afterEach(() => {
 })
 
 describe('SessionDetailPage 세트 삭제·복구', () => {
+  it('유효 줄에는 수정 링크가 있고 삭제된 줄에는 없다', async () => {
+    mockFetch({
+      ...me,
+      'GET /api/admin/inhouse-sessions/1': () => jsonResponse(200, session([set(7, 1, false), set(8, 2, true)])),
+    })
+    renderApp('/admin/sessions/1')
+
+    expect(await screen.findByRole('link', { name: '세트 1 수정' })).toHaveAttribute('href', '/admin/sets/7/edit')
+    expect(screen.queryByRole('link', { name: '세트 2 수정' })).toBeNull()
+    expect(screen.getByRole('button', { name: '세트 2 복구' })).toBeInTheDocument()
+  })
+
   it('확인을 취소하면 삭제 요청을 보내지 않는다', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const { calls } = mockFetch({
