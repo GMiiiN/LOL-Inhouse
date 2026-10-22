@@ -171,4 +171,14 @@ docker compose -f infra/compose.desktop.yml --env-file .env logs --tail 100 back
 | DB 비밀번호를 바꾸고 싶음 / DB를 처음부터 다시 | **데이터가 모두 지워집니다.** 먼저 백업 후 `docker compose -f infra/compose.desktop.yml --env-file .env down -v` → `.env` 수정 → `up -d --build` |
 | 이미지 업로드가 413 | 이미지가 10MB를 넘음. 용량을 줄여서 다시 |
 
+### 내전 기록 처음부터 다시 시작
+
+내전 묶음·대결·세트·추출 작업, 미등록 선수(실명 없는 선수), 결과창 이미지를 모두 지운다. 등록 선수(실명·닉네임·라인 티어)와 점수표는 남는다. 먼저 백업을 만들고, 지울 개수를 보여 준 뒤 `yes`를 입력해야 지운다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File infraeset-records.ps1
+```
+
+되돌리려면 방금 만든 백업 폴더로 복원 스크립트를 실행한다.
+
 > 실수로 `down -v`를 실행하면 DB 볼륨이 삭제됩니다. 일반 종료에는 `-v`를 붙이지 마세요.
