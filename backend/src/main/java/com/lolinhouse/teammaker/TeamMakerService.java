@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,8 @@ import com.lolinhouse.common.web.TierTeamErrorCodes;
 import com.lolinhouse.domain.Position;
 import com.lolinhouse.domain.team.ScoreMatrix;
 import com.lolinhouse.domain.team.Slot;
+import com.lolinhouse.domain.team.TierGap;
+import com.lolinhouse.domain.team.TierGapEstimator;
 import com.lolinhouse.domain.team.TeamMakeResult;
 import com.lolinhouse.domain.team.TeamMakerPlayer;
 import com.lolinhouse.domain.team.TeamOption;
@@ -70,7 +73,7 @@ public class TeamMakerService {
     }
 
     /** 조회 시점의 참가자 티어와 점수표. 옵션과 scoreMatrix가 같은 값에서 나온다. */
-    private record Snapshot(Map<Long, TeamMakerPlayer> players, ScoreTable table) {
+    private record Snapshot(Map<Long, TeamMakerPlayer> players, ScoreTable table, Map<Long, Position> estimated) {
     }
 
     public TeamMakerResponse auto(TeamMakerAutoRequest request, String clientAddress) {
@@ -113,18 +116,12 @@ public class TeamMakerService {
         Set<TogetherPair> together = parsePairs(request.together(), new HashSet<>(all), "같은 팀");
         Set<TogetherPair> apart = parseApart(request.apart(), new HashSet<>(all), together);
 
-        return compute(all, snapshot -> {
+        return compute(all, snapshot -> withEstimates(snapshot, picks, request.tierGaps()), snapshot -> {
             Map<Position, List<TeamMakerPlayer>> resolved = new EnumMap<>(Position.class);
             for (Position position : Position.values()) {
                 List<TeamMakerPlayer> pair = new ArrayList<>();
                 for (Long id : picks.get(position)) {
-                    TeamMakerPlayer player = snapshot.players().get(id);
-                    if (player.tierOf(position) == null) {
-                        throw ApiException.badRequest(TierTeamErrorCodes.TEAM_LANE_TIER_MISSING,
-                                position.label() + " 라인 티어가 없는 사람이 있어요.")
-                                .with("position", position.name()).with("playerId", id);
-                    }
-                    pair.add(player);
+                    pair.add(snapshot.players().get(id));
                 }
                 resolved.put(position, pair);
             }
@@ -133,11 +130,55 @@ public class TeamMakerService {
                 "같은 팀 조건을 만족하는 조합이 없어요. 같은 라인의 두 사람은 같은 팀이 될 수 없어요.");
     }
 
+    /**
+     * 그 라인 티어가 없는 사람이 있는 라인은 tierGaps로 추정 티어를 정해 그 사람의 lanes에 넣는다(이번 계산용, 저장 안 함).
+     * 한 명이라도 티어가 없는데 tierGaps가 없으면 400. 둘 다 티어가 있으면 tierGaps는 무시한다.
+     */
+    private static Snapshot withEstimates(Snapshot snapshot, Map<Position, List<Long>> picks,
+            Map<Position, TierGap> tierGaps) {
+        Map<Long, TeamMakerPlayer> players = new LinkedHashMap<>(snapshot.players());
+        Map<Long, Position> estimated = new LinkedHashMap<>();
+        for (Position position : Position.values()) {
+            TeamMakerPlayer first = players.get(picks.get(position).get(0));
+            TeamMakerPlayer second = players.get(picks.get(position).get(1));
+            if (first.tierOf(position) != null && second.tierOf(position) != null) {
+                continue;
+            }
+            TierGap gap = tierGaps == null ? null : tierGaps.get(position);
+            if (gap == null) {
+                throw ApiException.badRequest(TierTeamErrorCodes.TEAM_TIER_GAP_REQUIRED,
+                        position.label() + " 라인에 티어가 없는 사람이 있어요. 두 사람의 티어 차이를 입력해 주세요.")
+                        .with("position", position.name());
+            }
+            if (!TierGapEstimator.isValid(gap)) {
+                throw ApiException.badRequest(TierTeamErrorCodes.TEAM_TIER_GAP_INVALID,
+                        position.label() + " 라인의 티어 차이 입력이 올바르지 않아요.").with("position", position.name());
+            }
+            LaneTier[] tiers = TierGapEstimator.estimate(first.tierOf(position), second.tierOf(position), gap);
+            TeamMakerPlayer[] pair = {first, second};
+            for (int i = 0; i < 2; i++) {
+                if (pair[i].tierOf(position) == null) {
+                    Map<Position, LaneTier> lanes = new EnumMap<>(Position.class);
+                    lanes.putAll(pair[i].lanes());
+                    lanes.put(position, tiers[i]);
+                    players.put(pair[i].id(), new TeamMakerPlayer(pair[i].id(), lanes));
+                    estimated.put(pair[i].id(), position);
+                }
+            }
+        }
+        return new Snapshot(players, snapshot.table(), estimated);
+    }
+
     private TeamMakerResponse compute(List<Long> participantIds, Function<Snapshot, TeamMakeResult> run,
             String failureCode, String failureDetail) {
+        return compute(participantIds, UnaryOperator.identity(), run, failureCode, failureDetail);
+    }
+
+    private TeamMakerResponse compute(List<Long> participantIds, UnaryOperator<Snapshot> prepare,
+            Function<Snapshot, TeamMakeResult> run, String failureCode, String failureDetail) {
         guard.acquire();
         try {
-            Snapshot snapshot = readTransaction.execute(status -> loadSnapshot(participantIds));
+            Snapshot snapshot = prepare.apply(readTransaction.execute(status -> loadSnapshot(participantIds)));
             TeamMakeResult result = run.apply(snapshot);
             if (!result.isSuccess()) {
                 throw ApiException.unprocessable(failureCode, failureDetail);
@@ -168,14 +209,14 @@ public class TeamMakerService {
         }
         ScoreTable table = scoreSettingRepository.findById(ScoreSetting.SINGLE_ID)
                 .map(ScoreSetting::toTable).orElse(ScoreTable.DEFAULT);
-        return new Snapshot(players, table);
+        return new Snapshot(players, table, Map.of());
     }
 
     private TeamMakerResponse toResponse(List<TeamOption> options, Snapshot snapshot) {
         List<Option> views = new ArrayList<>();
         for (TeamOption option : options) {
             TeamOption placed = random.nextBoolean() ? option.swapSides() : option;
-            views.add(new Option(slotViews(placed.blue()), slotViews(placed.red()), placed.blueSum(),
+            views.add(new Option(slotViews(placed.blue(), snapshot), slotViews(placed.red(), snapshot), placed.blueSum(),
                     placed.redSum(), placed.diff(), placed.gap(), placed.cost(), placed.total()));
         }
         Map<Long, Map<Position, MatrixCell>> matrix = new LinkedHashMap<>();
@@ -183,16 +224,18 @@ public class TeamMakerService {
             Map<Position, MatrixCell> cells = new EnumMap<>(Position.class);
             row.forEach((position, cell) -> cells.put(position, new MatrixCell(cell.score(),
                     cell.tier() == null ? null : cell.tier().tier(),
-                    cell.tier() == null ? null : cell.tier().sub(), cell.hasTier())));
+                    cell.tier() == null ? null : cell.tier().sub(), cell.hasTier(),
+                    snapshot.estimated().get(id) == position)));
             matrix.put(id, cells);
         });
         return new TeamMakerResponse(views, matrix);
     }
 
-    private static List<SlotView> slotViews(List<Slot> slots) {
+    private static List<SlotView> slotViews(List<Slot> slots, Snapshot snapshot) {
         return slots.stream().map(slot -> new SlotView(slot.playerId(), slot.position(),
                 slot.tier() == null ? null : slot.tier().tier(),
-                slot.tier() == null ? null : slot.tier().sub(), slot.score())).toList();
+                slot.tier() == null ? null : slot.tier().sub(), slot.score(),
+                snapshot.estimated().get(slot.playerId()) == slot.position())).toList();
     }
 
     private static void requireNoNulls(List<Long> ids) {

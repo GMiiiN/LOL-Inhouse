@@ -102,7 +102,7 @@ describe('useTeamMakerState', () => {
     expect(result.current.state.together).toEqual([])
   })
 
-  it('localStorage에서 복원하고 티어리스트에 없는 id·그 라인 티어 없는 pick은 제거한다', () => {
+  it('localStorage에서 복원하고 티어리스트에 없는 id는 제거한다(그 라인 티어 없는 사람은 남긴다)', () => {
     localStorage.setItem(
       TEAM_MAKER_STORAGE_KEY,
       JSON.stringify({
@@ -123,8 +123,8 @@ describe('useTeamMakerState', () => {
 
     rerender({ list: players })
     expect(result.current.state.chosen).toEqual([3, 1])
-    expect(result.current.state.pick.TOP).toEqual([1, null]) // 8번은 탑 티어 없음
-    expect(result.current.state.pick.MID).toEqual([null, null]) // 2번은 미드 티어 없음
+    expect(result.current.state.pick.TOP).toEqual([1, 8]) // 8번은 탑 티어 없어도 고를 수 있다
+    expect(result.current.state.pick.MID).toEqual([2, null]) // 2번은 미드 티어 없어도 고를 수 있다
     expect(result.current.state.together).toEqual([]) // 수동 모드 참가자는 {1}뿐이라 쌍이 사라진다
   })
 

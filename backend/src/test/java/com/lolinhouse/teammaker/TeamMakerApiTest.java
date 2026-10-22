@@ -14,6 +14,7 @@ import com.lolinhouse.TestRandomConfiguration.FixedRandom;
 import com.lolinhouse.domain.Position;
 import com.lolinhouse.domain.team.Slot;
 import com.lolinhouse.domain.team.TeamMakeResult;
+import com.lolinhouse.domain.team.TeamMaker;
 import com.lolinhouse.domain.team.TeamMakerPlayer;
 import com.lolinhouse.domain.team.TeamOption;
 import com.lolinhouse.domain.team.TogetherPair;
@@ -130,6 +131,19 @@ class TeamMakerApiTest {
 
     ResultActions manual(List<Long> ids, String together) throws Exception {
         return postJson("/api/team-maker/manual", manualBody(ids, together), addr());
+    }
+
+    ResultActions manualWithGaps(List<Long> ids, String tierGaps) throws Exception {
+        String body = manualBody(ids, "[]");
+        return postJson("/api/team-maker/manual", body.substring(0, body.length() - 1) + ",\"tierGaps\":" + tierGaps + "}",
+                addr());
+    }
+
+    /** 가짜 엔진이 실제 도메인 수동 계산을 그대로 돌린다(추정 티어가 점수에 반영됐는지 확인용). */
+    void realManualEngine() {
+        when(engine.manual(any(), any(), any(), any())).thenAnswer(invocation -> TeamMaker.manual(
+                invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2),
+                invocation.getArgument(3)));
     }
 
     /** 앞 5명이 블루, 뒤 5명이 레드인 방안 4개. i번째 방안은 blueSum 100+i, redSum 200+i로 구별한다. */
@@ -557,14 +571,54 @@ class TeamMakerApiTest {
     }
 
     @Test
-    void 수동_그_라인_티어가_없으면_400_TEAM_LANE_TIER_MISSING() throws Exception {
+    void 수동_그_라인_티어가_없으면_tierGaps가_필수라_없으면_400_TEAM_TIER_GAP_REQUIRED() throws Exception {
+        List<Long> ids = new ArrayList<>(tenPlayers());
+        ids.set(4, newPlayer(Position.TOP, Position.JUNGLE)); // MID 라인 첫째
+        manual(ids, "[]").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_TIER_GAP_REQUIRED"))
+                .andExpect(jsonPath("$.position").value("MID"));
+    }
+
+    @Test
+    void 수동_tierGaps_값이_범위를_벗어나면_400_TEAM_TIER_GAP_INVALID() throws Exception {
+        List<Long> ids = new ArrayList<>(tenPlayers());
+        ids.set(4, newPlayer(Position.TOP, Position.JUNGLE));
+        manualWithGaps(ids, "{\"MID\":{\"stronger\":0,\"tiers\":6}}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_TIER_GAP_INVALID"))
+                .andExpect(jsonPath("$.position").value("MID"));
+        manualWithGaps(ids, "{\"MID\":{\"stronger\":2,\"tiers\":1}}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_TIER_GAP_INVALID"));
+    }
+
+    @Test
+    void 수동_티어_없는_사람은_tierGaps로_추정_티어를_받아_계산하고_추정_표시를_돌려준다() throws Exception {
         List<Long> ids = new ArrayList<>(tenPlayers());
         long noMid = newPlayer(Position.TOP, Position.JUNGLE);
-        ids.set(4, noMid); // MID 라인 첫째
-        manual(ids, "[]").andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("TEAM_LANE_TIER_MISSING"))
-                .andExpect(jsonPath("$.position").value("MID"))
-                .andExpect(jsonPath("$.playerId").value(noMid));
+        ids.set(4, noMid); // MID 첫째, 둘째(ids[5])는 MID 3티어 중
+        realManualEngine();
+        ScoreTable table = scoreSettingRepository.findById(ScoreSetting.SINGLE_ID).orElseThrow().toTable();
+
+        // 첫째(티어 없음)가 1티어 더 잘함 -> 3 - 1 = 2티어 MID
+        manualWithGaps(ids, "{\"MID\":{\"stronger\":0,\"tiers\":1}}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.options").isNotEmpty())
+                .andExpect(jsonPath("$.scoreMatrix['" + noMid + "'].MID.hasTier").value(true))
+                .andExpect(jsonPath("$.scoreMatrix['" + noMid + "'].MID.estimated").value(true))
+                .andExpect(jsonPath("$.scoreMatrix['" + noMid + "'].MID.tier").value(2))
+                .andExpect(jsonPath("$.scoreMatrix['" + noMid + "'].MID.sub").value("MID"))
+                .andExpect(jsonPath("$.scoreMatrix['" + noMid + "'].MID.score")
+                        .value(table.points(new LaneTier(2, TierSub.MID), Position.MID)))
+                .andExpect(jsonPath("$.scoreMatrix['" + noMid + "'].TOP.estimated").value(false))
+                .andExpect(jsonPath("$.scoreMatrix['" + ids.get(5) + "'].MID.estimated").value(false))
+                .andExpect(jsonPath("$.options[0].*[?(@.playerId==" + noMid + ")].estimated").value(true));
+    }
+
+    @Test
+    void 수동_둘_다_티어가_있으면_tierGaps를_보내도_무시하고_추정_표시가_없다() throws Exception {
+        List<Long> ids = tenPlayers();
+        realManualEngine();
+        manualWithGaps(ids, "{\"MID\":{\"stronger\":0,\"tiers\":3}}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.scoreMatrix['" + ids.get(4) + "'].MID.estimated").value(false))
+                .andExpect(jsonPath("$.scoreMatrix['" + ids.get(4) + "'].MID.tier").value(3));
     }
 
     @Test

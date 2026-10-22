@@ -153,6 +153,94 @@ describe('TeamMakerPage 입력', () => {
   })
 })
 
+describe('TeamMakerPage 수동 모드 티어 없는 선수', () => {
+  const noLanes = { id: 99, displayName: '신입', lanes: {}, flagged: false } as unknown as TierListResponse['players'][number]
+  const withNewcomer = { 'GET /api/tier-list': () => jsonResponse(200, { ...tierList, players: [...tierList.players, noLanes] }) }
+  // 서폿 둘째 칸만 신입(99), 나머지는 티어 있는 사람
+  const IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 99]
+  async function fillLanes(ids = IDS) {
+    await userEvent.click(await screen.findByRole('tab', { name: '라인 직접 지정' }))
+    for (const [i, position] of POSITIONS.entries()) {
+      await userEvent.selectOptions(screen.getByLabelText(`${LABEL[position]} 1번째`), String(ids[i * 2]))
+      await userEvent.selectOptions(screen.getByLabelText(`${LABEL[position]} 2번째`), String(ids[i * 2 + 1]))
+    }
+  }
+
+  it('그 라인 티어가 없는 선수도 맨 뒤에 "이름 · 티어 없음"으로 고를 수 있다', async () => {
+    setup(withNewcomer)
+    await userEvent.click(await screen.findByRole('tab', { name: '라인 직접 지정' }))
+    const options = within(screen.getByLabelText(`${LABEL.MID} 1번째`)).getAllByRole('option')
+    expect(options.at(-1)).toHaveTextContent(/^신입 · 티어 없음$/)
+  })
+
+  it('티어 없는 사람이 고른 라인에만 입력이 나타나고 비워 두면 버튼이 꺼진다', async () => {
+    setup(withNewcomer)
+    await fillLanes()
+
+    expect(screen.getByLabelText('서포터 더 잘하는 사람')).toBeInTheDocument()
+    expect(screen.getByLabelText('서포터 티어 차이')).toBeInTheDocument()
+    expect(screen.queryByLabelText('탑 더 잘하는 사람')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '팀 짜기' })).toBeDisabled()
+    expect(screen.getByText(/더 잘하는 사람과 티어 차이를 골라/)).toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('서포터 더 잘하는 사람'), '신입')
+    expect(screen.getByRole('button', { name: '팀 짜기' })).toBeDisabled() // 티어 차이는 아직
+    await userEvent.selectOptions(screen.getByLabelText('서포터 티어 차이'), '2')
+    expect(screen.getByRole('button', { name: '팀 짜기' })).toBeEnabled()
+
+    // 티어 없는 사람을 티어 있는 사람으로 바꾸면 입력이 사라진다
+    await userEvent.selectOptions(screen.getByLabelText('서포터 2번째'), '10')
+    expect(screen.queryByLabelText('서포터 더 잘하는 사람')).not.toBeInTheDocument()
+  })
+
+  it('요청 본문에 tierGaps가 실리고, 사람이 바뀌면 그 라인 입력이 초기화된다', async () => {
+    const { calls } = setup({ ...withNewcomer, 'POST /api/team-maker/manual': () => jsonResponse(200, response) })
+    await fillLanes()
+    await userEvent.selectOptions(screen.getByLabelText('서포터 더 잘하는 사람'), '신입')
+    await userEvent.selectOptions(screen.getByLabelText('서포터 티어 차이'), '2')
+    await userEvent.click(screen.getByRole('button', { name: '팀 짜기' }))
+    await screen.findByText('팀 방안 2개')
+    expect(postBody(calls).tierGaps).toEqual({ SUPPORT: { stronger: 1, tiers: 2 } })
+    expect(JSON.parse(localStorage.getItem(TEAM_MAKER_STORAGE_KEY)!).gaps.SUPPORT).toEqual({ stronger: 1, tiers: 2 })
+
+    await userEvent.selectOptions(screen.getByLabelText('서포터 1번째'), '10') // 사람이 바뀜
+    expect(screen.getByLabelText('서포터 더 잘하는 사람')).toHaveValue('')
+    expect(screen.getByRole('button', { name: '팀 짜기' })).toBeDisabled()
+  })
+
+  it('비슷함을 고르면 티어 차이 없이 stronger null, tiers 0으로 보낸다', async () => {
+    const { calls } = setup({ ...withNewcomer, 'POST /api/team-maker/manual': () => jsonResponse(200, response) })
+    await fillLanes()
+    await userEvent.selectOptions(screen.getByLabelText('서포터 더 잘하는 사람'), '비슷함')
+    expect(screen.queryByLabelText('서포터 티어 차이')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '팀 짜기' }))
+    await screen.findByText('팀 방안 2개')
+    expect(postBody(calls).tierGaps).toEqual({ SUPPORT: { stronger: null, tiers: 0 } })
+  })
+
+  it('둘 다 티어가 있으면 tierGaps를 보내지 않는다', async () => {
+    const { calls } = setup({ 'POST /api/team-maker/manual': () => jsonResponse(200, response) })
+    await fillLanes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    await userEvent.click(screen.getByRole('button', { name: '팀 짜기' }))
+    await screen.findByText('팀 방안 2개')
+    expect(postBody(calls)).not.toHaveProperty('tierGaps')
+  })
+
+  it('추정 티어는 결과에 "(추정)"으로 표시한다', async () => {
+    const estimatedSlot: SlotView = { playerId: 99, position: 'SUPPORT', tier: 4, sub: 'MID', score: 36, estimated: true }
+    const base = response.options[0]
+    const estimatedResponse: TeamMakerResponse = {
+      ...response,
+      options: [{ ...base, blue: [...base.blue.slice(0, 4), estimatedSlot] }],
+    }
+    setup({ ...withNewcomer, 'POST /api/team-maker/manual': () => jsonResponse(200, estimatedResponse) })
+    await fillLanes()
+    await userEvent.selectOptions(screen.getByLabelText('서포터 더 잘하는 사람'), '비슷함')
+    await userEvent.click(screen.getByRole('button', { name: '팀 짜기' }))
+    expect(await screen.findByText(/4티어 \(추정\)/)).toBeInTheDocument()
+  })
+})
+
 describe('TeamMakerPage 오류', () => {
   it.each([
     [503, 'TEAM_MAKER_BUSY', '다른 팀 짜기 계산이 진행 중'],

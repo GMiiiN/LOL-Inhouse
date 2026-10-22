@@ -2,7 +2,7 @@
 // 참가자에서 빠진 사람의 쌍은 자동으로 지우고, 티어리스트에 없는 선수 id는 걸러 낸다.
 import { useEffect, useMemo, useState } from 'react'
 import { POSITIONS, type Position } from '../../api/types'
-import { MAX_TOGETHER_PAIRS, type TierPlayer, type TogetherPair } from '../../api/tierTypes'
+import { MAX_TOGETHER_PAIRS, type TierGapRequest, type TierPlayer, type TogetherPair } from '../../api/tierTypes'
 
 export const TEAM_MAKER_STORAGE_KEY = 'lol-inhouse-team-maker'
 export const PAIR_NEEDS_TWO_MESSAGE = '같은 팀으로 묶을 서로 다른 두 사람을 골라 주세요.'
@@ -12,10 +12,15 @@ export const AUTO_PARTICIPANT_COUNT = 10
 
 export type TeamMode = 'auto' | 'manual'
 export type PickState = Record<Position, [number | null, number | null]>
+// 수동 모드 라인별 티어 차이 입력. stronger: 0·1 = 그 라인 picks 인덱스, 'same' = 비슷함, null = 아직 안 고름. tiers: null = 아직 안 고름
+export type GapInput = { stronger: 0 | 1 | 'same' | null; tiers: number | null }
+export type GapState = Partial<Record<Position, GapInput>>
+export const EMPTY_GAP: GapInput = { stronger: null, tiers: null }
 export type TeamMakerState = {
   mode: TeamMode
   chosen: number[] // 자동 모드 참가자. 클릭한 순서를 유지한다(서버 결과가 이 순서에 의존)
   pick: PickState
+  gaps: GapState // 수동 모드, 사람이 바뀌면 그 라인 입력은 지운다
   together: TogetherPair[]
   apart: TogetherPair[] // 꼭 다른 팀 쌍. together와 같은 쌍은 들어가지 않는다
   fix: Record<number, Position> // 라인 고정(자동 모드). 참가자에서 빠져도 값은 남긴다
@@ -28,7 +33,15 @@ const emptyPick = (): PickState => ({
   ADC: [null, null],
   SUPPORT: [null, null],
 })
-export const emptyState = (): TeamMakerState => ({ mode: 'auto', chosen: [], pick: emptyPick(), together: [], apart: [], fix: {} })
+export const emptyState = (): TeamMakerState => ({
+  mode: 'auto',
+  chosen: [],
+  pick: emptyPick(),
+  gaps: {},
+  together: [],
+  apart: [],
+  fix: {},
+})
 
 // 현재 모드 기준 참가자(중복 제거, 순서 유지)
 export function participantsOf(state: TeamMakerState): number[] {
@@ -37,6 +50,26 @@ export function participantsOf(state: TeamMakerState): number[] {
       ? state.chosen
       : POSITIONS.flatMap((position) => state.pick[position]).filter((id): id is number => id !== null)
   return [...new Set(ids)]
+}
+
+// 수동 모드에서 그 라인 두 사람 중 한 명이라도 그 라인 티어가 없으면 티어 차이 입력이 필요하다
+export function needsGap(position: Position, pick: PickState, players: TierPlayer[]): boolean {
+  return pick[position].some((id) => id !== null && !players.find((player) => player.id === id)?.lanes[position])
+}
+
+// 입력이 끝났는지: 더 잘하는 쪽을 골랐고, 비슷함이 아니면 티어 차이도 골랐다
+export const isGapComplete = (gap: GapInput | undefined): boolean =>
+  !!gap && gap.stronger !== null && (gap.stronger === 'same' || gap.tiers !== null)
+
+// 요청 본문의 tierGaps: 입력이 필요한 라인만. 비슷함은 stronger null + tiers 0
+export function tierGapsOf(state: TeamMakerState, players: TierPlayer[]): Partial<Record<Position, TierGapRequest>> {
+  const out: Partial<Record<Position, TierGapRequest>> = {}
+  for (const position of POSITIONS) {
+    const gap = state.gaps[position]
+    if (!needsGap(position, state.pick, players) || !gap || !isGapComplete(gap)) continue
+    out[position] = gap.stronger === 'same' ? { stronger: null, tiers: 0 } : { stronger: gap.stronger as 0 | 1, tiers: gap.tiers ?? 0 }
+  }
+  return out
 }
 
 // 요청에 담을 고정: 자동 모드이고 현재 참가자인 사람 것만
@@ -60,7 +93,7 @@ const samePair = (a: number, b: number, c: number, d: number) => (a === c && b =
 
 const isId = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value)
 
-// 저장된 값을 믿지 않고 모양을 다시 만든다. players가 있으면 없는 id·그 라인 티어 없는 pick도 제거한다.
+// 저장된 값을 믿지 않고 모양을 다시 만든다. players가 있으면 없는 id도 제거한다(그 라인 티어가 없는 사람은 고를 수 있다).
 export function sanitize(raw: unknown, players: TierPlayer[] | undefined): TeamMakerState {
   const value = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const byId = new Map((players ?? []).map((player) => [player.id, player]))
@@ -71,8 +104,17 @@ export function sanitize(raw: unknown, players: TierPlayer[] | undefined): TeamM
     const pair = Array.isArray(rawPick[position]) ? (rawPick[position] as unknown[]) : []
     pick[position] = [0, 1].map((i) => {
       const id = pair[i]
-      return known(id) && (!players || byId.get(id)?.lanes[position]) ? id : null
+      return known(id) ? id : null
     }) as [number | null, number | null]
+  }
+  const gaps: GapState = {}
+  const rawGaps = (value.gaps && typeof value.gaps === 'object' ? value.gaps : {}) as Record<string, unknown>
+  for (const position of POSITIONS) {
+    const g = rawGaps[position] as Partial<Record<keyof GapInput, unknown>> | undefined
+    if (!g || typeof g !== 'object') continue
+    const stronger = g.stronger === 0 || g.stronger === 1 || g.stronger === 'same' ? g.stronger : null
+    const tiers = isId(g.tiers) && g.tiers >= 0 && g.tiers <= 5 ? g.tiers : null
+    if (stronger !== null || tiers !== null) gaps[position] = { stronger, tiers }
   }
   const chosen = Array.isArray(value.chosen)
     ? [...new Set((value.chosen as unknown[]).filter(known))].slice(0, AUTO_PARTICIPANT_COUNT)
@@ -97,6 +139,7 @@ export function sanitize(raw: unknown, players: TierPlayer[] | undefined): TeamM
     mode: value.mode === 'manual' ? 'manual' : 'auto',
     chosen,
     pick,
+    gaps,
     together,
     apart,
     fix,
@@ -140,9 +183,12 @@ export function useTeamMakerState(players: TierPlayer[] | undefined) {
     update((s) => {
       const pair: [number | null, number | null] = [...s.pick[position]]
       pair[index] = id
-      return { ...s, pick: { ...s.pick, [position]: pair } }
+      if (pair[index] === s.pick[position][index]) return s
+      const { [position]: _dropped, ...gaps } = s.gaps // 사람이 바뀌면 그 라인 티어 차이 입력은 의미가 없어진다
+      return { ...s, pick: { ...s.pick, [position]: pair }, gaps }
     })
-  const clearPick = () => update((s) => ({ ...s, pick: emptyPick() }))
+  const setGap = (position: Position, gap: GapInput) => update((s) => ({ ...s, gaps: { ...s.gaps, [position]: gap } }))
+  const clearPick = () => update((s) => ({ ...s, pick: emptyPick(), gaps: {} }))
   // lane이 null이면 고정을 푼다
   const setFix = (id: number, lane: Position | null) =>
     update((s) => {
@@ -174,6 +220,7 @@ export function useTeamMakerState(players: TierPlayer[] | undefined) {
     toggleChosen,
     clearChosen,
     setPick,
+    setGap,
     clearPick,
     setFix,
     addPair,
