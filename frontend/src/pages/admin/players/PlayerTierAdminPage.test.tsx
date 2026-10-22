@@ -1,4 +1,4 @@
-// 선수 관리 화면 테스트: 편집 모드, 편집기 검증·저장·409 문구, 삭제 두 번 확인, 미등록 목록, 캐시 무효화
+// 선수 관리 화면 테스트: 칩 바로 수정, 편집기 검증·저장·409 문구, 삭제 두 번 확인, 미등록 목록, 캐시 무효화
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -32,6 +32,7 @@ const baseRoutes = {
   'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
   'GET /api/tier-list': () => jsonResponse(200, tierList),
   'GET /api/admin/player-profiles': () => jsonResponse(200, [hong, kim, stranger]),
+  'GET /api/admin/tier-recommendations': () => jsonResponse(200, []),
 }
 
 async function waitForCall(find: () => MockRequest | undefined): Promise<MockRequest> {
@@ -43,17 +44,12 @@ async function waitForCall(find: () => MockRequest | undefined): Promise<MockReq
 }
 
 describe('PlayerTierAdminPage', () => {
-  it('편집 모드를 켜기 전에는 칩이 수정 버튼이 아니고, 켜면 수정 버튼이 된다', async () => {
-    const user = userEvent.setup()
+  it('편집 모드 없이 처음부터 칩이 수정 버튼이다', async () => {
     mockFetch(baseRoutes)
     renderApp('/admin/players')
 
-    await screen.findByText('홍길동')
-    expect(screen.queryByRole('button', { name: /홍길동 수정/ })).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: '편집 모드' }))
-
-    expect(screen.getByRole('button', { name: /홍길동 수정/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /홍길동 수정/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '편집 모드' })).not.toBeInTheDocument()
   })
 
   it('사람 추가: 이름·닉네임·라인을 검증하고 올바르면 POST로 보낸 뒤 목록을 새로 불러온다', async () => {
@@ -127,7 +123,6 @@ describe('PlayerTierAdminPage', () => {
     })
     renderApp('/admin/players')
 
-    await user.click(await screen.findByRole('button', { name: '편집 모드' }))
     await user.click(await screen.findByRole('button', { name: /홍길동 수정/ }))
 
     expect(await screen.findByRole('heading', { name: '홍길동 수정' })).toBeInTheDocument()
@@ -161,7 +156,6 @@ describe('PlayerTierAdminPage', () => {
     })
     renderApp('/admin/players')
 
-    await user.click(await screen.findByRole('button', { name: '편집 모드' }))
     await user.click(await screen.findByRole('button', { name: /홍길동 수정/ }))
     await user.type(await screen.findByLabelText('게임 닉네임 (쉼표로 구분)'), ', 낯선닉')
     await user.click(screen.getByRole('button', { name: '저장' }))
@@ -180,7 +174,6 @@ describe('PlayerTierAdminPage', () => {
     })
     renderApp('/admin/players')
 
-    await user.click(await screen.findByRole('button', { name: '편집 모드' }))
     await user.click(await screen.findByRole('button', { name: /홍길동 수정/ }))
     await screen.findByRole('heading', { name: '홍길동 수정' })
     await user.click(screen.getByRole('button', { name: '저장' }))
@@ -196,7 +189,6 @@ describe('PlayerTierAdminPage', () => {
     })
     renderApp('/admin/players')
 
-    await user.click(await screen.findByRole('button', { name: '편집 모드' }))
     await user.click(await screen.findByRole('button', { name: /홍길동 수정/ }))
     await screen.findByRole('heading', { name: '홍길동 수정' })
 
@@ -216,8 +208,7 @@ describe('PlayerTierAdminPage', () => {
     })
     renderApp('/admin/players')
 
-    await user.click(await screen.findByRole('button', { name: '편집 모드' }))
-    await user.click(screen.getByRole('button', { name: '사람별' }))
+    await user.click(await screen.findByRole('button', { name: '사람별' }))
     await user.click(await screen.findByRole('button', { name: '김철수 삭제' }))
     await user.click(screen.getByRole('button', { name: '김철수 정말 삭제' }))
 

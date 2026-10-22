@@ -113,6 +113,29 @@ describe('TeamMakerPage 입력', () => {
     expect(screen.queryByText('가나 + 다라')).not.toBeInTheDocument()
   })
 
+  it('꼭 다른 팀 조건: 요청에 apart가 실리고, 같은 쌍이 같은 팀 조건에 있으면 막는다', async () => {
+    const { calls } = setup({ 'POST /api/team-maker/auto': () => jsonResponse(200, response) })
+    await pickPlayers(NAMES)
+
+    await userEvent.selectOptions(screen.getByLabelText('첫 번째 사람'), '가나')
+    await userEvent.selectOptions(screen.getByLabelText('두 번째 사람'), '다라')
+    await userEvent.click(screen.getByRole('button', { name: '추가' }))
+
+    await userEvent.selectOptions(screen.getByLabelText('다른 팀 첫 번째 사람'), '다라')
+    await userEvent.selectOptions(screen.getByLabelText('다른 팀 두 번째 사람'), '가나')
+    await userEvent.click(screen.getByRole('button', { name: '다른 팀 조건 추가' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('꼭 같은 팀과 꼭 다른 팀에 함께')
+
+    await userEvent.selectOptions(screen.getByLabelText('다른 팀 두 번째 사람'), '마바')
+    await userEvent.click(screen.getByRole('button', { name: '다른 팀 조건 추가' }))
+    expect(screen.getByText('다라 ↔ 마바')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '팀 짜기' }))
+    await screen.findByText('팀 방안 2개')
+    expect(postBody(calls).together).toEqual([[1, 2]])
+    expect(postBody(calls).apart).toEqual([[2, 3]])
+  })
+
   it('수동 모드: 라인마다 2명을 골라야 하고 옵션 문구는 이름 · N티어 (점수점)', async () => {
     const { calls } = setup({ 'POST /api/team-maker/manual': () => jsonResponse(200, response) })
     await userEvent.click(await screen.findByRole('tab', { name: '라인 직접 지정' }))

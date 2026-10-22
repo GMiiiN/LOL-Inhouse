@@ -129,7 +129,12 @@ export function PlayerProfilePage() {
               <h2 className="stat-section-title">라인별 기록</h2>
               <LaneCards lanes={player.byPosition} />
               <h2 className="stat-section-title">챔피언별 기록</h2>
-              <ChampionTable playerId={player.playerId} champions={player.byChampion} period={period} />
+              <ChampionTable
+                playerId={player.playerId}
+                champions={player.byChampion}
+                byPosition={player.byChampionByPosition}
+                period={period}
+              />
               <h2 className="stat-section-title">대결별 개인 결과</h2>
               <DuelResultList duels={player.duels} />
               <div className="stats-bar stat-section-title">

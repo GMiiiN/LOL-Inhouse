@@ -7,6 +7,7 @@ import { MAX_TOGETHER_PAIRS, type TierPlayer, type TogetherPair } from '../../ap
 export const TEAM_MAKER_STORAGE_KEY = 'lol-inhouse-team-maker'
 export const PAIR_NEEDS_TWO_MESSAGE = '같은 팀으로 묶을 서로 다른 두 사람을 골라 주세요.'
 export const PAIR_LIMIT_MESSAGE = `같은 팀 조건은 최대 ${MAX_TOGETHER_PAIRS}쌍까지예요.`
+export const PAIR_CONFLICT_MESSAGE = '같은 두 사람을 꼭 같은 팀과 꼭 다른 팀에 함께 넣을 수 없어요.'
 export const AUTO_PARTICIPANT_COUNT = 10
 
 export type TeamMode = 'auto' | 'manual'
@@ -16,6 +17,7 @@ export type TeamMakerState = {
   chosen: number[] // 자동 모드 참가자. 클릭한 순서를 유지한다(서버 결과가 이 순서에 의존)
   pick: PickState
   together: TogetherPair[]
+  apart: TogetherPair[] // 꼭 다른 팀 쌍. together와 같은 쌍은 들어가지 않는다
   fix: Record<number, Position> // 라인 고정(자동 모드). 참가자에서 빠져도 값은 남긴다
 }
 
@@ -26,7 +28,7 @@ const emptyPick = (): PickState => ({
   ADC: [null, null],
   SUPPORT: [null, null],
 })
-export const emptyState = (): TeamMakerState => ({ mode: 'auto', chosen: [], pick: emptyPick(), together: [], fix: {} })
+export const emptyState = (): TeamMakerState => ({ mode: 'auto', chosen: [], pick: emptyPick(), together: [], apart: [], fix: {} })
 
 // 현재 모드 기준 참가자(중복 제거, 순서 유지)
 export function participantsOf(state: TeamMakerState): number[] {
@@ -46,9 +48,15 @@ export function fixedLanesOf(state: TeamMakerState): Record<number, Position> {
 
 function prunePairs(state: TeamMakerState): TeamMakerState {
   const members = new Set(participantsOf(state))
-  const together = state.together.filter(([a, b]) => members.has(a) && members.has(b))
-  return together.length === state.together.length ? state : { ...state, together }
+  const keep = (pairs: TogetherPair[]) => pairs.filter(([a, b]) => members.has(a) && members.has(b))
+  const together = keep(state.together)
+  const apart = keep(state.apart)
+  return together.length === state.together.length && apart.length === state.apart.length
+    ? state
+    : { ...state, together, apart }
 }
+
+const samePair = (a: number, b: number, c: number, d: number) => (a === c && b === d) || (a === d && b === c)
 
 const isId = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value)
 
@@ -69,11 +77,16 @@ export function sanitize(raw: unknown, players: TierPlayer[] | undefined): TeamM
   const chosen = Array.isArray(value.chosen)
     ? [...new Set((value.chosen as unknown[]).filter(known))].slice(0, AUTO_PARTICIPANT_COUNT)
     : []
-  const together = (Array.isArray(value.together) ? (value.together as unknown[]) : []).flatMap((pair): TogetherPair[] =>
-    Array.isArray(pair) && pair.length === 2 && known(pair[0]) && known(pair[1]) && pair[0] !== pair[1]
-      ? [[pair[0], pair[1]]]
-      : [],
-  )
+  const pairsOf = (raw: unknown) =>
+    (Array.isArray(raw) ? (raw as unknown[]) : []).flatMap((pair): TogetherPair[] =>
+      Array.isArray(pair) && pair.length === 2 && known(pair[0]) && known(pair[1]) && pair[0] !== pair[1]
+        ? [[pair[0], pair[1]]]
+        : [],
+    )
+  const together = pairsOf(value.together).slice(0, MAX_TOGETHER_PAIRS)
+  const apart = pairsOf(value.apart)
+    .filter(([a, b]) => !together.some(([x, y]) => samePair(x, y, a, b)))
+    .slice(0, MAX_TOGETHER_PAIRS)
   const rawFix = (value.fix && typeof value.fix === 'object' ? value.fix : {}) as Record<string, unknown>
   const fix: Record<number, Position> = {}
   for (const [key, lane] of Object.entries(rawFix)) {
@@ -84,7 +97,8 @@ export function sanitize(raw: unknown, players: TierPlayer[] | undefined): TeamM
     mode: value.mode === 'manual' ? 'manual' : 'auto',
     chosen,
     pick,
-    together: together.slice(0, MAX_TOGETHER_PAIRS),
+    together,
+    apart,
     fix,
   })
 }
@@ -138,16 +152,20 @@ export function useTeamMakerState(players: TierPlayer[] | undefined) {
       return { ...s, fix }
     })
   const removePair = (index: number) => update((s) => ({ ...s, together: s.together.filter((_, i) => i !== index) }))
+  const removeApart = (index: number) => update((s) => ({ ...s, apart: s.apart.filter((_, i) => i !== index) }))
 
-  // 오류 문구를 돌려준다. 성공하면 null
-  function addPair(a: number | null, b: number | null): string | null {
+  // 꼭 같은 팀(together)·꼭 다른 팀(apart) 추가가 같은 규칙을 쓴다. 오류 문구를 돌려주고, 성공하면 null
+  function addTo(kind: 'together' | 'apart', a: number | null, b: number | null): string | null {
     if (a === null || b === null || a === b) return PAIR_NEEDS_TWO_MESSAGE
-    const exists = state.together.some(([x, y]) => (x === a && y === b) || (x === b && y === a))
-    if (exists) return null
-    if (state.together.length >= MAX_TOGETHER_PAIRS) return PAIR_LIMIT_MESSAGE
-    update((s) => ({ ...s, together: [...s.together, [a, b]] }))
+    const other = kind === 'together' ? state.apart : state.together
+    if (other.some(([x, y]) => samePair(x, y, a, b))) return PAIR_CONFLICT_MESSAGE
+    if (state[kind].some(([x, y]) => samePair(x, y, a, b))) return null
+    if (state[kind].length >= MAX_TOGETHER_PAIRS) return PAIR_LIMIT_MESSAGE
+    update((s) => ({ ...s, [kind]: [...s[kind], [a, b]] }))
     return null
   }
+  const addPair = (a: number | null, b: number | null) => addTo('together', a, b)
+  const addApart = (a: number | null, b: number | null) => addTo('apart', a, b)
 
   return {
     state,
@@ -160,5 +178,7 @@ export function useTeamMakerState(players: TierPlayer[] | undefined) {
     setFix,
     addPair,
     removePair,
+    addApart,
+    removeApart,
   }
 }

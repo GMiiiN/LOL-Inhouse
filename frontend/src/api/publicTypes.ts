@@ -70,7 +70,8 @@ export type DuelHead = {
 }
 export type DuelBlock = DuelHead & { sets: SetView[] } // sets는 필터에 맞는 세트만
 export type SessionBlock = { sessionId: number; startDate: string; duels: DuelBlock[] }
-export type RecordPage = { sessions: SessionBlock[]; nextBefore: string | null }
+export type RecordTotals = { duels: number; sets: number } // 현재 필터 전체 기준(페이지와 무관)
+export type RecordPage = { sessions: SessionBlock[]; nextBefore: string | null; totals: RecordTotals }
 
 // ---- 대결 상세 (GET /api/duels/{id}) ----
 export type DuelResult = 'WIN' | 'DRAW' | 'LOSS'
@@ -128,8 +129,9 @@ export type PlayerRecord = {
   summary: SummaryView
   byPosition: PositionSummary[]
   byChampion: ChampionSummary[]
+  byChampionByPosition: Partial<Record<Position, ChampionSummary[]>> // 그 라인으로 뛴 기록만의 챔피언별(뛴 라인만 키)
   duels: { wins: number; draws: number; losses: number; items: DuelResultItem[] }
-  recentSets: SetView[] // 최대 5
+  recentSets: SetView[] // 최대 3
 }
 
 // ---- 랭킹 (GET /api/rankings) ----
@@ -167,6 +169,11 @@ export type Home = {
   recentSets: SetView[] // 최대 5
   topPicksByPosition: Record<Position, TopPick | null> // 5라인 키 모두
 }
+
+// ---- 듀오 (GET /api/duos) ----
+export type DuoPlayer = { playerId: number; displayName: string; registered: boolean }
+export type DuoEntry = { players: [DuoPlayer, DuoPlayer]; sets: number; wins: number; losses: number; winRate: number }
+export type Duos = { minSets: number; best: DuoEntry[]; worst: DuoEntry[] } // 각 최대 3쌍
 
 // ---- 필터 ----
 export type ChampionScope = 'ANY' | 'PLAYER_PICK'

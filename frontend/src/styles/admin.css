@@ -256,3 +256,89 @@
   border-radius: 12px;
   background: var(--panel);
 }
+
+/* M5.6: 관리 화면 표·글자를 크게 */
+.data-table-large th,
+.data-table-large td {
+  padding: 12px 14px;
+  font-size: 16px;
+}
+
+.data-table-large th {
+  font-size: 14px;
+}
+
+.duel-item-block {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.duel-item-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.set-table {
+  display: block;
+  overflow-x: auto;
+}
+
+.set-row-deleted td {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.set-row-deleted td:last-child {
+  text-decoration: none;
+}
+
+/* M5.6: 티어 조정 추천 카드 */
+.tier-rec-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.tier-rec-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  font-size: 15px;
+}
+
+.tier-rec-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-rec-direction {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.tier-rec-up .tier-rec-direction {
+  color: var(--blue);
+}
+
+.tier-rec-down .tier-rec-direction {
+  color: var(--red);
+}
+
+.tier-rec-change {
+  margin: 8px 0 4px;
+  font-size: 17px;
+}
+
+.tier-rec-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}

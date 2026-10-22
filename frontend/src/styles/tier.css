@@ -88,7 +88,7 @@
 
 .tier-board thead th {
   padding: 2px 12px;
-  text-align: left;
+  text-align: center;
   font-family: var(--f-display);
   font-weight: 800;
   font-size: 15px;
@@ -162,7 +162,7 @@
   font: inherit;
   font-weight: 700;
   line-height: 1.25;
-  text-align: left;
+  text-align: center;
 }
 
 button.tier-chip {
@@ -178,6 +178,7 @@ button.tier-chip:hover {
   min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 
@@ -231,7 +232,7 @@ button.tier-chip:hover {
 
 .tier-people th {
   padding: 10px 8px;
-  text-align: left;
+  text-align: center;
   font-size: 12px;
   letter-spacing: 0.1em;
   color: var(--muted);
@@ -240,6 +241,7 @@ button.tier-chip:hover {
 
 .tier-people td {
   padding: 10px 8px;
+  text-align: center;
   border-bottom: 1px solid var(--line);
 }
 

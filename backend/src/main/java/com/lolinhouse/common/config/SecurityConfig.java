@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/tier-list", "/api/score-table").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/records", "/api/records/export", "/api/duels/*",
                                 "/api/sets/*", "/api/players", "/api/players/*", "/api/rankings",
-                                "/api/champion-stats", "/api/champions", "/api/home").permitAll()
+                                "/api/champion-stats", "/api/champions", "/api/home", "/api/duos").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/team-maker/auto", "/api/team-maker/manual").permitAll()
                         .requestMatchers("/api/admin/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

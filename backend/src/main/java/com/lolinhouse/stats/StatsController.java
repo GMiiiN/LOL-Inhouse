@@ -20,9 +20,11 @@ public class StatsController {
     private final RankingService rankingService;
     private final ChampionStatsService championStatsService;
     private final HomeService homeService;
+    private final DuoService duoService;
 
     public StatsController(PlayerRecordService playerService, RankingService rankingService,
-            ChampionStatsService championStatsService, HomeService homeService) {
+            ChampionStatsService championStatsService, HomeService homeService, DuoService duoService) {
+        this.duoService = duoService;
         this.playerService = playerService;
         this.rankingService = rankingService;
         this.championStatsService = championStatsService;
@@ -62,6 +64,12 @@ public class StatsController {
     @GetMapping("/home")
     HomeResponse home() {
         return homeService.get();
+    }
+
+    @GetMapping("/duos")
+    DuoResponse duos(@RequestParam(required = false) String from, @RequestParam(required = false) String to) {
+        LocalDate[] period = period(from, to);
+        return duoService.get(period[0], period[1]);
     }
 
     private static LocalDate[] period(String from, String to) {

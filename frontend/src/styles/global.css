@@ -8,7 +8,7 @@ body {
   background: radial-gradient(1100px 420px at 50% -120px, var(--glow), transparent 75%) no-repeat, var(--bg);
   color: var(--ink);
   font-family: var(--f-body);
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.55;
   min-height: 100vh;
   font-variant-numeric: tabular-nums;
@@ -42,7 +42,7 @@ a {
   align-items: center;
   gap: 24px;
   padding: 0 24px;
-  height: 56px;
+  height: 64px;
   background: var(--nav);
   border-bottom: 1px solid var(--line);
 }
@@ -53,7 +53,7 @@ a {
 
 .app-logo {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 21px;
   white-space: nowrap;
 }
 
@@ -67,7 +67,7 @@ a {
 }
 
 .app-nav a {
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 6px;
   color: var(--muted);
   white-space: nowrap; /* 메뉴가 늘어도 글자가 두 줄로 깨지지 않게 */
@@ -83,7 +83,7 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--muted);
   flex-shrink: 0;
   white-space: nowrap;
@@ -96,19 +96,20 @@ a {
   background: var(--panel2);
   color: var(--ink);
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
 }
 
 .app-main {
-  max-width: 1080px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 36px 28px;
+  overflow-wrap: anywhere; /* 긴 이름이 좁은 창에서 가로 스크롤을 만들지 않게 */
 }
 
 .placeholder-page h1 {
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: 25px;
 }
 
 .placeholder-page p {

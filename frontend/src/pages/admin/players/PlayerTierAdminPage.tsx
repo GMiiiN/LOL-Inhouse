@@ -1,20 +1,20 @@
-// 선수 관리(/admin/players): 티어리스트 + 편집 모드 + 사람 추가 + 미등록 선수 목록. 편집기는 목록 위에 열린다.
+// 선수 관리(/admin/players): 티어리스트(사람을 누르면 편집기) + 사람 추가 + 미등록 선수 목록. 편집기는 목록 위에 열린다.
 // 프로필을 바꾸면 티어리스트·프로필 목록·M4 등록 화면의 선수 목록(PLAYERS_KEY)·공개 조회 화면을 모두 새로 불러온다.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createProfile, deleteProfile, listProfiles, mergePlayer, updateProfile } from '../../../api/tier'
-import { PLAYERS_KEY, PLAYER_PROFILES_KEY, PUBLIC_KEY, TIER_LIST_KEY } from '../../../api/queryKeys'
+import { PLAYERS_KEY, PLAYER_PROFILES_KEY, PUBLIC_KEY, TIER_LIST_KEY, TIER_RECOMMENDATIONS_KEY } from '../../../api/queryKeys'
 import type { PlayerProfile, PlayerProfileRequest } from '../../../api/tierTypes'
 import { ErrorNotice } from '../../../components/ErrorNotice'
 import { TierListPanel } from '../../tier/TierListPanel'
 import { compareNames } from '../../tier/tierSort'
 import { PlayerEditor } from './PlayerEditor'
+import { TierRecommendations } from './TierRecommendations'
 
 type Editing = { kind: 'new' } | { kind: 'profile'; id: number }
 
 export function PlayerTierAdminPage() {
   const queryClient = useQueryClient()
-  const [editMode, setEditMode] = useState(false)
   const [editing, setEditing] = useState<Editing | null>(null)
   const profiles = useQuery({ queryKey: PLAYER_PROFILES_KEY, queryFn: listProfiles })
 
@@ -24,6 +24,7 @@ export function PlayerTierAdminPage() {
       queryClient.invalidateQueries({ queryKey: TIER_LIST_KEY }),
       queryClient.invalidateQueries({ queryKey: PLAYERS_KEY }),
       queryClient.invalidateQueries({ queryKey: PUBLIC_KEY }),
+      queryClient.invalidateQueries({ queryKey: TIER_RECOMMENDATIONS_KEY }),
     ])
 
   const save = useMutation({
@@ -123,24 +124,16 @@ export function PlayerTierAdminPage() {
       <ErrorNotice error={profiles.error} />
       {editing === null && <ErrorNotice error={remove.error} />}
 
+      <TierRecommendations profiles={all} editing={editing !== null} />
+
       <TierListPanel
-        onEdit={editMode ? (id) => open({ kind: 'profile', id }) : undefined}
-        onDelete={editMode ? (id) => remove.mutate(id) : undefined}
+        onEdit={(id) => open({ kind: 'profile', id })}
+        onDelete={(id) => remove.mutate(id)}
         emptyHint="사람 추가를 눌러 이름과 라인별 티어를 넣어 주세요."
         toolbar={
-          <>
-            <button
-              type="button"
-              className="header-button"
-              aria-pressed={editMode}
-              onClick={() => setEditMode(!editMode)}
-            >
-              편집 모드
-            </button>
-            <button type="button" className="primary-button" onClick={() => open({ kind: 'new' })}>
-              사람 추가
-            </button>
-          </>
+          <button type="button" className="primary-button" onClick={() => open({ kind: 'new' })}>
+            사람 추가
+          </button>
         }
       />
 

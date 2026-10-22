@@ -3,6 +3,7 @@
 // 설계: docs/design/m4-design.md §6 ChampionPicker
 import { useState } from 'react'
 import type { Box4, ChampionGuess, ChampionInfo } from '../../../api/registrationTypes'
+import { matchesChampion } from '../../../lib/hangulSearch'
 import { IconCrop } from './IconCrop'
 
 export const MAX_SEARCH_RESULTS = 8
@@ -40,11 +41,8 @@ export function ChampionPicker({
   const [query, setQuery] = useState('')
   const selected = value ? championsById.get(value) : undefined
   const uncertain = guess?.uncertain ?? false
-  const normalizedQuery = query.trim().toLowerCase()
-  const results = normalizedQuery
-    ? champions
-        .filter((c) => c.name.toLowerCase().includes(normalizedQuery) || c.id.toLowerCase().includes(normalizedQuery))
-        .slice(0, MAX_SEARCH_RESULTS)
+  const results = query.trim()
+    ? champions.filter((c) => matchesChampion(query, c.name, c.id)).slice(0, MAX_SEARCH_RESULTS)
     : []
 
   function pick(id: string) {
@@ -96,7 +94,7 @@ export function ChampionPicker({
         <input
           type="search"
           aria-label={`${label} 검색`}
-          placeholder="챔피언 검색"
+          placeholder="챔피언 검색 (초성 가능)"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

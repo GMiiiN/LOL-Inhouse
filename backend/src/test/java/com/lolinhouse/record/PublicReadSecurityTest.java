@@ -25,7 +25,8 @@ class PublicReadSecurityTest {
 
     private static final String[] PUBLIC_GET_PATHS = {
             "/api/records", "/api/records/export", "/api/duels/1", "/api/sets/1", "/api/players", "/api/players/1",
-            "/api/rankings", "/api/champion-stats", "/api/champions", "/api/home"
+            "/api/rankings", "/api/champion-stats", "/api/champions", "/api/home",
+            "/api/duos"
     };
 
     @Autowired

@@ -3,6 +3,7 @@ package com.lolinhouse.session;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.lolinhouse.common.web.ApiException;
@@ -43,7 +44,7 @@ public class InhouseSessionService {
         try {
             InhouseSession saved = transactionTemplate.execute(status ->
                     sessionRepository.saveAndFlush(InhouseSession.of(startDate)));
-            return new InhouseSessionSummaryResponse(saved.id(), saved.startDate(), 0, 0);
+            return new InhouseSessionSummaryResponse(saved.id(), saved.startDate(), 0, 0, 0);
         } catch (DataIntegrityViolationException e) {
             throwIfDateTaken(startDate); // 사전 조회 이후 다른 요청이 먼저 만든 경우
             throw e;
@@ -60,21 +61,28 @@ public class InhouseSessionService {
                 .stream()
                 .collect(Collectors.toMap(DuelRepository.SessionDuelCount::getSessionId,
                         DuelRepository.SessionDuelCount::getDuelCount));
-        Map<Long, Long> setCounts = gameSetRepository.countBySessionIds(sessions.stream().map(InhouseSession::id).toList())
-                .stream()
-                .collect(Collectors.toMap(GameSetRepository.SessionSetCount::getSessionId,
-                        GameSetRepository.SessionSetCount::getSetCount));
-        return sessions.stream()
-                .map(s -> new InhouseSessionSummaryResponse(s.id(), s.startDate(), counts.getOrDefault(s.id(), 0L),
-                        setCounts.getOrDefault(s.id(), 0L)))
-                .toList();
+        Map<Long, GameSetRepository.SessionSetCount> setCounts = gameSetRepository
+                .countBySessionIds(sessions.stream().map(InhouseSession::id).toList()).stream()
+                .collect(Collectors.toMap(GameSetRepository.SessionSetCount::getSessionId, Function.identity()));
+        return sessions.stream().map(s -> {
+            GameSetRepository.SessionSetCount sets = setCounts.get(s.id());
+            return new InhouseSessionSummaryResponse(s.id(), s.startDate(), counts.getOrDefault(s.id(), 0L),
+                    sets == null ? 0 : sets.getSetCount(), sets == null ? 0 : sets.getActiveSetCount());
+        }).toList();
     }
 
     @Transactional(readOnly = true)
     public InhouseSessionDetailResponse get(Long id) {
         InhouseSession session = sessionRepository.findById(id).orElseThrow(() -> sessionNotFound(id));
-        List<DuelResponse> duels = duelRepository.findBySessionIdOrderBySeqAsc(id).stream()
-                .map(DuelResponse::from).toList();
+        List<Duel> found = duelRepository.findBySessionIdOrderBySeqAsc(id);
+        Map<Long, List<AdminSetSummary>> setsByDuel = found.isEmpty() ? Map.of()
+                : gameSetRepository.findByDuelIdInOrderBySetNoAsc(found.stream().map(Duel::id).toList()).stream()
+                        .collect(Collectors.groupingBy(GameSet::duelId,
+                                Collectors.mapping(AdminSetSummary::from, Collectors.toList())));
+        List<AdminDuelResponse> duels = found.stream()
+                .map(d -> new AdminDuelResponse(d.id(), d.sessionId(), d.seq(), d.fearlessMode(),
+                        setsByDuel.getOrDefault(d.id(), List.of())))
+                .toList();
         return new InhouseSessionDetailResponse(session.id(), session.startDate(), duels);
     }
 

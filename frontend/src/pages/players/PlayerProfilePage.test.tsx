@@ -1,4 +1,5 @@
 // 선수 프로필: 라인 카드 순서, 챔피언 행 링크(PLAYER_PICK + 기간 유지), 기록 없음, 없는 선수 404
+import userEvent from '@testing-library/user-event'
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { PlayerRecord } from '../../api/publicTypes'
@@ -26,6 +27,10 @@ const base: PlayerRecord = {
     { championKey: 'Ahri', summary: summary(3, 2, 10, 4, 8) },
     { championKey: 'Zed', summary: summary(1, 1, 3, 1, 2) },
   ],
+  byChampionByPosition: {
+    TOP: [{ championKey: 'Zed', summary: summary(1, 1, 3, 1, 2) }],
+    MID: [{ championKey: 'Ahri', summary: summary(3, 2, 10, 4, 8) }],
+  },
   duels: { wins: 1, draws: 1, losses: 0, items: [{ duelId: 9, sessionDate: '2026-10-12', seq: 2, wins: 2, losses: 1, result: 'WIN' }] },
   recentSets: [],
 }
@@ -53,6 +58,18 @@ describe('PlayerProfilePage', () => {
       'href',
       '/records?player=3&champion=Ahri&championScope=PLAYER_PICK&from=2026-10-01&to=2026-10-31',
     )
+  })
+
+  it('챔피언별 기록은 라인 탭으로 그 라인 기록만 보여 준다', async () => {
+    setup('/players/3', () => jsonResponse(200, base))
+    const table = await screen.findByRole('table', { name: '챔피언별 기록' })
+    expect(within(table).getAllByRole('row')).toHaveLength(3) // 머리 + 2
+    const tabs = screen.getByRole('group', { name: '챔피언별 기록 라인' })
+    expect(within(tabs).getAllByRole('button').map((b) => b.textContent)).toEqual(['전체', '탑', '미드'])
+    await userEvent.click(within(tabs).getByRole('button', { name: '미드' }))
+    const rows = within(screen.getByRole('table', { name: '챔피언별 기록' })).getAllByRole('row')
+    expect(rows).toHaveLength(2)
+    expect(rows[1]).toHaveTextContent('아리')
   })
 
   it('기간이 없으면 링크에도 기간이 없다. 대결 결과는 대결 상세로 간다', async () => {

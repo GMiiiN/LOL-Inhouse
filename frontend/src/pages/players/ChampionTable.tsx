@@ -1,6 +1,9 @@
-// 프로필의 챔피언별 표. 행을 누르면 그 선수가 직접 픽한 그 챔피언의 경기 목록(현재 기간 유지)으로 간다.
+// 프로필의 챔피언별 표. 라인 탭(전체 + 뛴 라인)으로 그 라인 기록만 볼 수 있다.
+// 행을 누르면 그 선수가 직접 픽한 그 챔피언의 경기 목록(현재 기간 유지)으로 간다.
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ChampionSummary, Period } from '../../api/publicTypes'
+import { POSITION_LABEL, POSITIONS, type Position } from '../../api/types'
 import { toQueryString } from '../../api/public'
 import { ChampionIcon } from '../../components/stats/ChampionIcon'
 import { KdaText } from '../../components/stats/KdaText'
@@ -17,9 +20,34 @@ function championRecordsHref(playerId: number, championKey: string, period: Peri
   })}`
 }
 
-type ChampionTableProps = { playerId: number; champions: ChampionSummary[]; period: Period }
+type ChampionTableProps = {
+  playerId: number
+  champions: ChampionSummary[]
+  byPosition?: Partial<Record<Position, ChampionSummary[]>>
+  period: Period
+}
 
-export function ChampionTable({ playerId, champions, period }: ChampionTableProps) {
+export function ChampionTable({ playerId, champions, byPosition = {}, period }: ChampionTableProps) {
+  const [lane, setLane] = useState<Position | 'ALL'>('ALL')
+  const lanes = POSITIONS.filter((position) => (byPosition[position]?.length ?? 0) > 0)
+  const rows = lane === 'ALL' ? champions : (byPosition[lane] ?? [])
+  return (
+    <>
+      {lanes.length > 0 && (
+        <div className="stats-seg stat-champ-lanes" role="group" aria-label="챔피언별 기록 라인">
+          {(['ALL', ...lanes] as const).map((value) => (
+            <button key={value} type="button" aria-pressed={value === lane} onClick={() => setLane(value)}>
+              {value === 'ALL' ? '전체' : POSITION_LABEL[value]}
+            </button>
+          ))}
+        </div>
+      )}
+      <ChampionRows playerId={playerId} champions={rows} period={period} />
+    </>
+  )
+}
+
+function ChampionRows({ playerId, champions, period }: { playerId: number; champions: ChampionSummary[]; period: Period }) {
   return (
     <div className="stat-table-scroll">
       <table className="stat-table" aria-label="챔피언별 기록">

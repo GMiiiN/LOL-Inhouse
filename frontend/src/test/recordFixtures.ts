@@ -58,5 +58,6 @@ export function makeDuel(overrides: Partial<DuelBlock> = {}): DuelBlock {
 }
 
 export function makePage(duels: DuelBlock[], nextBefore: string | null = null, startDate = '2026-10-18'): RecordPage {
-  return { sessions: duels.length ? [{ sessionId: 3, startDate, duels }] : [], nextBefore }
+  const sets = duels.reduce((sum, duel) => sum + duel.sets.length, 0)
+  return { sessions: duels.length ? [{ sessionId: 3, startDate, duels }] : [], nextBefore, totals: { duels: duels.length, sets } }
 }

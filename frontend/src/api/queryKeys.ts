@@ -24,5 +24,7 @@ export const publicPlayersKey = (period: Period) => ['public', 'players', period
 export const publicPlayerKey = (playerId: number, period: Period) => ['public', 'player', playerId, period] as const
 export const rankingsKey = (query: RankingQuery) => ['public', 'rankings', query] as const
 export const championStatsKey = (period: Period) => ['public', 'champion-stats', period] as const
+export const duosKey = (period: Period) => ['public', 'duos', period] as const
 export const HOME_KEY = ['public', 'home'] as const
 export const PUBLIC_CHAMPIONS_KEY = ['public', 'champions'] as const
+export const TIER_RECOMMENDATIONS_KEY = ['admin', 'tier-recommendations'] as const

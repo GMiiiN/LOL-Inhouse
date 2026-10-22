@@ -1,6 +1,7 @@
 package com.lolinhouse.tier;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import com.lolinhouse.domain.Position;
@@ -61,6 +62,9 @@ public class PlayerLaneTier {
     @Column(name = "last_change_from_sub", length = 4)
     private TierSub lastChangeFromSub;
 
+    @Column(name = "tier_changed_on")
+    private LocalDate tierChangedOn;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -99,6 +103,15 @@ public class PlayerLaneTier {
     public LastChange lastChange() {
         return lastChangeDirection == null ? null
                 : new LastChange(lastChangeDirection, new LaneTier(lastChangeFromTier, lastChangeFromSub));
+    }
+
+    /** 티어 값이 마지막으로 실제 바뀐 날(Asia/Seoul). 한 번도 기록되지 않았으면 null. */
+    public LocalDate tierChangedOn() {
+        return tierChangedOn;
+    }
+
+    public void markTierChangedOn(LocalDate day) {
+        this.tierChangedOn = day;
     }
 
     public Instant updatedAt() {

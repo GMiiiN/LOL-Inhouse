@@ -37,11 +37,12 @@ export function TeamMakerPage({ random, coinDelayMs }: Props = {}) {
         return postTeamAuto({
           participantIds: state.chosen,
           together: state.together,
+          ...(state.apart.length > 0 && { apart: state.apart }),
           ...(Object.keys(fixedLanes).length > 0 && { fixedLanes }),
         })
       }
       const picks = Object.fromEntries(POSITIONS.map((position) => [position, state.pick[position]])) as TeamMakerManualRequest['picks']
-      return postTeamManual({ picks, together: state.together })
+      return postTeamManual({ picks, together: state.together, ...(state.apart.length > 0 && { apart: state.apart }) })
     },
     onSuccess: (response) =>
       setRun((current) => ({ id: (current?.id ?? 0) + 1, response, fixedLanes: fixedLanesOf(state) })),
@@ -107,6 +108,17 @@ export function TeamMakerPage({ random, coinDelayMs }: Props = {}) {
           nameOf={nameOf}
           onAdd={team.addPair}
           onRemove={team.removePair}
+        />
+      </section>
+
+      <section className="tm-panel">
+        <TogetherPairs
+          kind="apart"
+          participants={team.participants}
+          pairs={state.apart}
+          nameOf={nameOf}
+          onAdd={team.addApart}
+          onRemove={team.removeApart}
         />
       </section>
 

@@ -25,14 +25,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 역할: GET /api/home 조립(전체 기간). 최근 5세트와 라인별 최다 픽 챔피언.
+ * 역할: GET /api/home 조립(전체 기간). 최근 3세트와 라인별 최다 픽 챔피언.
  * 최다 픽 순서: 픽 수 → 승률 → 챔피언 한국어 이름. 이름은 동률일 때만 필요해서 카탈로그를 그때 처음 읽고,
  * 카탈로그가 없거나 모르는 키면 키 글자로 비교한다.
  */
 @Service
 public class HomeService {
 
-    private static final int RECENT_SET_LIMIT = 5;
+    private static final int RECENT_SET_LIMIT = 3;
 
     private final RecordReader reader;
     private final SetViewAssembler assembler;

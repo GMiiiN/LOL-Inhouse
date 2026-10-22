@@ -5,9 +5,71 @@ import { Link, useParams } from 'react-router-dom'
 import { createDuel, getSession } from '../../api/admin'
 import { SESSIONS_KEY, sessionKey } from '../../api/queryKeys'
 import type { FearlessMode } from '../../api/registrationTypes'
+import type { AdminSetSummary } from '../../api/types'
 import { ErrorNotice } from '../../components/ErrorNotice'
+import { formatDuration } from '../stats/format'
 
 const MODE_LABEL: Record<FearlessMode, string> = { RESET: '피어리스 초기화', CONTINUE: '피어리스 이어가기' }
+
+// 등록 시각을 한국 시간 "MM-DD HH:mm"으로. 읽을 수 없으면 원문 그대로
+function formatCreatedAt(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
+  return `${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
+}
+
+// 대결 안에 넣은 세트를 한 표로: "어디에 뭘 넣었는지" 한눈에 확인한다.
+function DuelSetTable({ sets }: { sets: AdminSetSummary[] }) {
+  if (sets.length === 0) return <p className="muted-text">아직 넣은 세트가 없습니다.</p>
+  return (
+    <table className="data-table data-table-large set-table" aria-label="넣은 세트">
+      <thead>
+        <tr>
+          <th>세트</th>
+          <th>A팀 진영</th>
+          <th>승리</th>
+          <th>경기 시간</th>
+          <th>결과창 날짜</th>
+          <th>킬 (A : B)</th>
+          <th>등록 방식</th>
+          <th>등록 시각</th>
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        {sets.map((set) => (
+          <tr key={set.setId} className={set.deleted ? 'set-row-deleted' : undefined}>
+            <td>세트 {set.setNo}</td>
+            <td>{set.team1Side === 'BLUE' ? '블루' : '레드'}</td>
+            <td>{set.winnerTeam === 'TEAM1' ? 'A팀' : 'B팀'}</td>
+            <td>{formatDuration(set.durationSec)}</td>
+            <td>{set.shotDate ?? '—'}</td>
+            <td>
+              {set.team1Kills} : {set.team2Kills}
+            </td>
+            <td>{set.source === 'IMPORT' ? '가져오기' : '결과창'}</td>
+            <td>{formatCreatedAt(set.createdAt)}</td>
+            <td>
+              {set.deleted && <span className="badge badge-warn">삭제됨</span>}{' '}
+              <Link to={`/sets/${set.setId}`} aria-label={`세트 ${set.setNo} 상세`}>
+                상세
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
 
 export function SessionDetailPage() {
   const sessionId = Number(useParams().sessionId)
@@ -76,12 +138,15 @@ export function SessionDetailPage() {
           {session.data.duels.length === 0 && <p className="muted-text">아직 대결이 없습니다.</p>}
           <ul className="duel-list">
             {session.data.duels.map((duel) => (
-              <li key={duel.id} className="duel-item">
-                <strong>대결 {duel.seq}</strong>
-                {duel.fearlessMode && <span className="badge badge-auto">{MODE_LABEL[duel.fearlessMode]}</span>}
-                <Link className="header-button push-right" to={`/admin/duels/${duel.id}/sets/new`}>
-                  세트 등록
-                </Link>
+              <li key={duel.id} className="duel-item duel-item-block">
+                <div className="duel-item-head">
+                  <strong>대결 {duel.seq}</strong>
+                  {duel.fearlessMode && <span className="badge badge-auto">{MODE_LABEL[duel.fearlessMode]}</span>}
+                  <Link className="header-button push-right" to={`/admin/duels/${duel.id}/sets/new`}>
+                    세트 등록
+                  </Link>
+                </div>
+                {duel.sets && <DuelSetTable sets={duel.sets} />}
               </li>
             ))}
           </ul>

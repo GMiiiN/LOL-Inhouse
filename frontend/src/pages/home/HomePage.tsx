@@ -1,11 +1,13 @@
-// 홈(/): 최근 경기 5개 + 라인별 가장 많이 나온 픽(GET /api/home). 둘 다 비면 빈 상태 한 줄만 보여 준다.
+// 홈(/): 최근 경기 3개 + 라인별 가장 많이 나온 픽(GET /api/home). 둘 다 비면 빈 상태 한 줄만 보여 준다.
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { getHome } from '../../api/public'
 import { HOME_KEY } from '../../api/queryKeys'
 import { POSITIONS, POSITION_LABEL } from '../../api/types'
 import { ErrorNotice } from '../../components/ErrorNotice'
 import { ChampionIcon } from '../../components/stats/ChampionIcon'
 import { EM_DASH } from '../stats/format'
+import { DuoColumn } from './DuoColumn'
 import { RecentSetList } from '../players/RecentSetList'
 import '../../styles/stats.css'
 
@@ -15,7 +17,8 @@ export function HomePage() {
   const empty = data !== undefined && data.recentSets.length === 0
 
   return (
-    <section>
+    <section className="home-layout">
+      <div className="home-main">
       <h1>홈</h1>
       {home.isPending && <p className="muted-text">불러오는 중입니다...</p>}
       <ErrorNotice error={home.error} />
@@ -45,8 +48,15 @@ export function HomePage() {
           </div>
           <h2 className="stat-section-title">최근 경기</h2>
           <RecentSetList sets={data.recentSets} />
+          <p className="home-more">
+            <Link className="stats-link" to="/records">
+              내전 기록 더 보기
+            </Link>
+          </p>
         </>
       )}
+      </div>
+      <DuoColumn />
     </section>
   )
 }

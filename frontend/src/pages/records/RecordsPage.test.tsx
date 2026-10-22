@@ -46,6 +46,12 @@ describe('RecordsPage', () => {
     )
   })
 
+  it('맨 위에 총 경기 수와 세트 수를 보여 준다', async () => {
+    mockRecords(() => jsonResponse(200, { ...makePage([makeDuel()]), totals: { duels: 7, sets: 19 } }))
+    renderApp('/records')
+    expect(await screen.findByText('총 7경기 · 19세트')).toBeInTheDocument()
+  })
+
   it('챔피언을 고르면 URL에 반영되고 다시 조회한다', async () => {
     const { recordCalls } = mockRecords(() => jsonResponse(200, makePage([makeDuel()])))
     const { router } = renderApp('/records')

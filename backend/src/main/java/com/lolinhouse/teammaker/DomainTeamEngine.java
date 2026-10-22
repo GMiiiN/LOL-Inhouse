@@ -17,14 +17,14 @@ import org.springframework.stereotype.Component;
 class DomainTeamEngine implements TeamEngine {
 
     @Override
-    public TeamMakeResult auto(List<TeamMakerPlayer> ordered, Set<TogetherPair> together, ScoreTable table,
-            Map<Long, Position> fixedLanes) {
-        return TeamMaker.auto(ordered, together, table, fixedLanes);
+    public TeamMakeResult auto(List<TeamMakerPlayer> ordered, Set<TogetherPair> together, Set<TogetherPair> apart,
+            ScoreTable table, Map<Long, Position> fixedLanes) {
+        return TeamMaker.auto(ordered, together, apart, table, fixedLanes);
     }
 
     @Override
     public TeamMakeResult manual(Map<Position, List<TeamMakerPlayer>> picks, Set<TogetherPair> together,
-            ScoreTable table) {
-        return TeamMaker.manual(picks, together, table);
+            Set<TogetherPair> apart, ScoreTable table) {
+        return TeamMaker.manual(picks, together, apart, table);
     }
 }

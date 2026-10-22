@@ -333,4 +333,105 @@ class TeamMakerTest {
         assertThat(result.options()).hasSize(4);
         assertThat(millis).isLessThan(5_000);
     }
+
+    // ---- 꼭 다른 팀(apart) ----
+
+    private static boolean sameTeam(TeamOption option, long a, long b) {
+        List<Long> blue = ids(option.blue());
+        return blue.contains(a) == blue.contains(b);
+    }
+
+    @Test
+    void 자동_apart가_비면_apart를_안_준_것과_결과가_완전히_같다() {
+        TeamMakeResult plain = TeamMaker.auto(tenAllLanes(3), Set.of(new TogetherPair(2, 3)), TENS);
+        TeamMakeResult withEmpty = TeamMaker.auto(tenAllLanes(3), Set.of(new TogetherPair(2, 3)), Set.of(), TENS, Map.of());
+        assertThat(withEmpty.options()).isEqualTo(plain.options());
+    }
+
+    @Test
+    void 자동_apart_한_쌍은_모든_방안에서_다른_팀이다() {
+        TeamMakeResult result = TeamMaker.auto(tenAllLanes(3), Set.of(), Set.of(new TogetherPair(1, 2)), TENS, Map.of());
+        assertThat(result.options()).hasSize(4);
+        assertThat(result.options()).allSatisfy(o -> assertThat(sameTeam(o, 1, 2)).isFalse());
+    }
+
+    @Test
+    void 자동_apart_여러_쌍은_모두_다른_팀이다() {
+        Set<TogetherPair> apart = Set.of(new TogetherPair(1, 2), new TogetherPair(3, 4), new TogetherPair(5, 6),
+                new TogetherPair(2, 3));
+        TeamMakeResult result = TeamMaker.auto(tenAllLanes(3), Set.of(), apart, TENS, Map.of());
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.options()).allSatisfy(o -> apart.forEach(p -> assertThat(sameTeam(o, p.first(), p.second())).isFalse()));
+    }
+
+    @Test
+    void 자동_together와_apart를_함께_만족한다() {
+        TeamMakeResult result = TeamMaker.auto(tenAllLanes(3), Set.of(new TogetherPair(1, 2)),
+                Set.of(new TogetherPair(2, 3), new TogetherPair(1, 4)), TENS, Map.of());
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.options()).allSatisfy(o -> {
+            assertThat(sameTeam(o, 1, 2)).isTrue();
+            assertThat(sameTeam(o, 2, 3)).isFalse();
+            assertThat(sameTeam(o, 1, 4)).isFalse();
+        });
+    }
+
+    @Test
+    void 자동_apart가_together와_모순이면_분할이_없다() {
+        TeamMakeResult result = TeamMaker.auto(tenAllLanes(3), Set.of(new TogetherPair(1, 3), new TogetherPair(2, 3)),
+                Set.of(new TogetherPair(1, 2)), TENS, Map.of());
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.failure()).isEqualTo(TeamMakeResult.Failure.NO_VALID_SPLIT);
+    }
+
+    @Test
+    void 자동_apart가_세_명을_서로_갈라야_하면_분할이_없다() {
+        // 1·2·3이 서로 모두 다른 팀이어야 하는데 팀은 둘뿐이다
+        TeamMakeResult result = TeamMaker.auto(tenAllLanes(3), Set.of(),
+                Set.of(new TogetherPair(1, 2), new TogetherPair(1, 3), new TogetherPair(2, 3)), TENS, Map.of());
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.failure()).isEqualTo(TeamMakeResult.Failure.NO_VALID_SPLIT);
+    }
+
+    @Test
+    void 자동_참가자가_아닌_사람이_낀_apart는_무시한다() {
+        TeamMakeResult plain = TeamMaker.auto(tenAllLanes(3), Set.of(), TENS);
+        TeamMakeResult ignored = TeamMaker.auto(tenAllLanes(3), Set.of(), Set.of(new TogetherPair(1, 99)), TENS, Map.of());
+        assertThat(ignored.options()).isEqualTo(plain.options());
+    }
+
+    private static Map<Position, List<TeamMakerPlayer>> manualPicks() {
+        Map<Position, List<TeamMakerPlayer>> picks = new EnumMap<>(Position.class);
+        picks.put(Position.TOP, List.of(player(1, Position.TOP, 3), player(2, Position.TOP, 3)));
+        picks.put(Position.JUNGLE, List.of(player(3, Position.JUNGLE, 3), player(4, Position.JUNGLE, 3)));
+        picks.put(Position.MID, List.of(player(5, Position.MID, 3), player(6, Position.MID, 3)));
+        picks.put(Position.ADC, List.of(player(7, Position.ADC, 3), player(8, Position.ADC, 3)));
+        picks.put(Position.SUPPORT, List.of(player(9, Position.SUPPORT, 3), player(10, Position.SUPPORT, 3)));
+        return picks;
+    }
+
+    @Test
+    void 수동_apart가_비면_결과가_같고_같은_라인_쌍은_항상_만족한다() {
+        TeamMakeResult plain = TeamMaker.manual(manualPicks(), Set.of(), TENS);
+        assertThat(TeamMaker.manual(manualPicks(), Set.of(), Set.of(), TENS).options()).isEqualTo(plain.options());
+        assertThat(TeamMaker.manual(manualPicks(), Set.of(), Set.of(new TogetherPair(3, 4)), TENS).options())
+                .isEqualTo(plain.options());
+    }
+
+    @Test
+    void 수동_apart_쌍은_다른_팀인_조합만_남긴다() {
+        // 1(탑 첫째)은 항상 블루. 3과 갈라야 하므로 정글은 4가 블루. 5·7과도 갈라야 한다.
+        TeamMakeResult result = TeamMaker.manual(manualPicks(), Set.of(),
+                Set.of(new TogetherPair(1, 3), new TogetherPair(1, 5)), TENS);
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.options()).allSatisfy(o -> assertThat(ids(o.blue())).contains(1L, 4L, 6L).doesNotContain(3L, 5L));
+    }
+
+    @Test
+    void 수동_apart가_together와_모순이면_조합이_없다() {
+        TeamMakeResult result = TeamMaker.manual(manualPicks(), Set.of(new TogetherPair(1, 4)),
+                Set.of(new TogetherPair(1, 4)), TENS);
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.failure()).isEqualTo(TeamMakeResult.Failure.PAIR_UNSATISFIABLE);
+    }
 }

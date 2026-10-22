@@ -44,8 +44,11 @@ public interface GameSetRepository extends JpaRepository<GameSet, Long> {
             + "and p.team = com.lolinhouse.domain.DuelTeam.TEAM1")
     List<Long> findTeam1PlayerIds(@Param("gameSetId") Long gameSetId);
 
-    /** 묶음별 세트 수(삭제 표시된 세트 포함). 세트가 없는 묶음은 결과에 없다 = 0. 묶음 삭제 가능 여부 표시용. */
-    @Query("select d.sessionId as sessionId, count(g) as setCount from GameSet g, Duel d "
+    /** 대결들의 모든 세트(삭제 표시 포함)를 세트 번호 순으로. 관리자 묶음 상세의 세트 요약용(쿼리 1번). */
+    List<GameSet> findByDuelIdInOrderBySetNoAsc(Collection<Long> duelIds);
+
+    /** 묶음별 세트 수(삭제 표시된 세트 포함)와 유효 세트 수. 세트가 없는 묶음은 결과에 없다 = 0. 묶음 삭제 가능 여부 표시용. */
+    @Query("select d.sessionId as sessionId, count(g) as setCount, count(g) - count(g.deletedAt) as activeSetCount from GameSet g, Duel d "
             + "where g.duelId = d.id and d.sessionId in :sessionIds group by d.sessionId")
     List<SessionSetCount> countBySessionIds(@Param("sessionIds") Collection<Long> sessionIds);
 
@@ -55,5 +58,7 @@ public interface GameSetRepository extends JpaRepository<GameSet, Long> {
         Long getSessionId();
 
         long getSetCount();
+
+        long getActiveSetCount();
     }
 }

@@ -7,20 +7,16 @@ import { ApiError } from '../../api/client'
 import { PUBLIC_KEY, SESSIONS_KEY } from '../../api/queryKeys'
 import { ErrorNotice } from '../../components/ErrorNotice'
 
-// 오늘 날짜(이 PC의 현재 날짜)를 "YYYY-MM-DD"로. toISOString은 UTC라 하루 밀릴 수 있어 쓰지 않는다.
-function todayString(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${now.getFullYear()}-${month}-${day}`
-}
-
 export function SessionsPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [startDate, setStartDate] = useState(todayString)
-  const [dateError, setDateError] = useState<string>()
-  const sessions = useQuery({ queryKey: SESSIONS_KEY, queryFn: listSessions })
+  const [startDate, setStartDate] = useState('')
+  const sessions = useQuery({
+    queryKey: SESSIONS_KEY,
+    queryFn: listSessions,
+    // 서버가 이미 내림차순으로 주지만 화면에서도 최신 날짜가 위에 오도록 보장한다
+    select: (rows) => [...rows].sort((a, b) => b.startDate.localeCompare(a.startDate)),
+  })
 
   const create = useMutation({
     mutationFn: createSession,
@@ -48,11 +44,7 @@ export function SessionsPage() {
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!startDate) {
-      setDateError('시작일을 선택해 주세요.')
-      return
-    }
-    setDateError(undefined)
+    if (!startDate) return
     create.mutate(startDate)
   }
 
@@ -70,12 +62,11 @@ export function SessionsPage() {
             시작일
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </label>
-          <button type="submit" className="primary-button" disabled={create.isPending}>
+          <button type="submit" className="primary-button" disabled={!startDate || create.isPending}>
             묶음 만들기
           </button>
         </form>
-        <p className="muted-text">자정이 지나 이어진 내전도 시작한 날짜의 묶음에 넣습니다.</p>
-        {dateError && <p className="field-error">{dateError}</p>}
+        <p className="muted-text">날짜를 직접 골라야 만들 수 있어요(실수 방지). 자정이 지나 이어진 내전도 시작한 날짜의 묶음에 넣습니다.</p>
         {conflict ? (
           <div className="error-notice" role="alert">
             <p>이 시작일의 내전 묶음이 이미 있습니다.</p>
@@ -96,11 +87,12 @@ export function SessionsPage() {
       <ErrorNotice error={remove.error} />
       {sessions.data?.length === 0 && <p className="muted-text">아직 내전 묶음이 없습니다.</p>}
       {sessions.data && sessions.data.length > 0 && (
-        <table className="data-table">
+        <table className="data-table data-table-large">
           <thead>
             <tr>
               <th>시작일</th>
               <th>대결 수</th>
+              <th>세트 수</th>
               <th />
             </tr>
           </thead>
@@ -109,6 +101,7 @@ export function SessionsPage() {
               <tr key={session.id}>
                 <td>{session.startDate}</td>
                 <td>{session.duelCount}</td>
+                <td>{session.activeSetCount ?? session.setCount}</td>
                 <td>
                   <Link to={`/admin/sessions/${session.id}`}>열기</Link>
                   {session.setCount === 0 && (

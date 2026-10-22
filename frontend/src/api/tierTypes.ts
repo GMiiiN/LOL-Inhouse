@@ -66,11 +66,13 @@ export type TogetherPair = [number, number]
 export type TeamMakerAutoRequest = {
   participantIds: number[] // 클릭한 순서 그대로 10개. 정렬해서 보내면 결과가 달라진다
   together: TogetherPair[]
+  apart?: TogetherPair[] // 꼭 다른 팀. 비면 생략
   fixedLanes?: Record<number, Position> // 라인 고정(자동만). JSON 키는 문자열 선수 id. 생략·빈 맵 = 고정 없음
 }
 export type TeamMakerManualRequest = {
   picks: Record<Position, [number, number]> // 라인마다 [첫째, 둘째]
   together: TogetherPair[]
+  apart?: TogetherPair[]
 }
 // 블루 칸이 A팀이다. tier·sub가 null이면 티어 없는 라인(점수는 대체 점수)
 export type SlotView = { playerId: number; position: Position; tier: Tier | null; sub: TierSub | null; score: number }
@@ -113,3 +115,18 @@ export const TIER_TEAM_ERROR_CODES = [
   'RATE_LIMITED',
 ] as const
 export type TierTeamErrorCode = (typeof TIER_TEAM_ERROR_CODES)[number]
+
+// ---- 티어 조정 추천 (GET /api/admin/tier-recommendations) ----
+export type TierRecommendation = {
+  playerId: number
+  displayName: string
+  position: Position
+  games: number
+  wins: number
+  kda: number
+  laneAvgKda: number
+  score: number
+  direction: TrendDirection
+  from: LaneValue
+  to: LaneValue
+}

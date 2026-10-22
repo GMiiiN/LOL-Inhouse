@@ -5,6 +5,7 @@ import type {
   PlayerProfileRequest,
   ScoreTableRequest,
   ScoreTableResponse,
+  TierRecommendation,
   TierListResponse,
 } from './tierTypes'
 
@@ -34,3 +35,6 @@ export const putScoreTable = (body: ScoreTableRequest) =>
 
 export const resetScoreTable = () =>
   apiRequest<ScoreTableResponse>('/api/admin/score-table/reset', { method: 'POST' })
+
+export const listTierRecommendations = () =>
+  apiRequest<TierRecommendation[]>('/api/admin/tier-recommendations')

@@ -149,8 +149,8 @@ class TeamMakerApiTest {
     }
 
     void engineReturns(List<Long> ids) {
-        when(engine.auto(any(), any(), any(), any())).thenReturn(fourOptions(ids));
-        when(engine.manual(any(), any(), any())).thenReturn(fourOptions(ids));
+        when(engine.auto(any(), any(), any(), any(), any())).thenReturn(fourOptions(ids));
+        when(engine.manual(any(), any(), any(), any())).thenReturn(fourOptions(ids));
     }
 
     // ---------- 보안 ----------
@@ -229,7 +229,7 @@ class TeamMakerApiTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<TeamMakerPlayer>> captor = ArgumentCaptor.forClass(List.class);
-        org.mockito.Mockito.verify(engine).auto(captor.capture(), any(), any(), any());
+        org.mockito.Mockito.verify(engine).auto(captor.capture(), any(), any(), any(), any());
         assertThat(captor.getValue().stream().map(TeamMakerPlayer::id).toList()).isEqualTo(shuffled);
     }
 
@@ -242,8 +242,89 @@ class TeamMakerApiTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Set<TogetherPair>> captor = ArgumentCaptor.forClass(Set.class);
-        org.mockito.Mockito.verify(engine).auto(any(), captor.capture(), any(), any());
+        org.mockito.Mockito.verify(engine).auto(any(), captor.capture(), any(), any(), any());
         assertThat(captor.getValue()).containsExactly(new TogetherPair(ids.get(0), ids.get(1)));
+    }
+
+    // ---------- apart (꼭 다른 팀) ----------
+
+    ResultActions autoWithApart(List<Long> ids, String together, String apart) throws Exception {
+        return postJson("/api/team-maker/auto", "{\"participantIds\":" + ids + ",\"together\":" + together
+                + ",\"apart\":" + apart + "}", addr());
+    }
+
+    ResultActions manualWithApart(List<Long> ids, String apart) throws Exception {
+        String body = manualBody(ids, "[]");
+        return postJson("/api/team-maker/manual", body.substring(0, body.length() - 1) + ",\"apart\":" + apart + "}",
+                addr());
+    }
+
+    @Test
+    void apart_쌍이_도메인에_전달된다_순서만_다른_쌍은_합쳐진다() throws Exception {
+        List<Long> ids = tenPlayers();
+        engineReturns(ids);
+        autoWithApart(ids, "[]", "[[" + ids.get(2) + "," + ids.get(3) + "],[" + ids.get(3) + "," + ids.get(2) + "]]")
+                .andExpect(status().isOk());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<TogetherPair>> captor = ArgumentCaptor.forClass(Set.class);
+        org.mockito.Mockito.verify(engine).auto(any(), any(), captor.capture(), any(), any());
+        assertThat(captor.getValue()).containsExactly(new TogetherPair(ids.get(2), ids.get(3)));
+    }
+
+    @Test
+    void apart가_없으면_빈_집합이_전달된다() throws Exception {
+        List<Long> ids = tenPlayers();
+        engineReturns(ids);
+        auto(ids, "[]").andExpect(status().isOk());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<TogetherPair>> captor = ArgumentCaptor.forClass(Set.class);
+        org.mockito.Mockito.verify(engine).auto(any(), any(), captor.capture(), any(), any());
+        assertThat(captor.getValue()).isEmpty();
+    }
+
+    @Test
+    void apart_5쌍은_통과하고_6쌍은_400_TEAM_PAIR_INVALID() throws Exception {
+        List<Long> ids = tenPlayers();
+        engineReturns(ids);
+        autoWithApart(ids, "[]", pairs(ids, 5)).andExpect(status().isOk());
+        autoWithApart(ids, "[]", pairs(ids, 6)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_PAIR_INVALID"));
+    }
+
+    @Test
+    void apart에_참가자가_아닌_사람이나_자기_자신이나_한_명짜리_쌍은_400() throws Exception {
+        List<Long> ids = tenPlayers();
+        autoWithApart(ids, "[]", "[[" + ids.get(0) + ",999999999]]").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_PAIR_INVALID"));
+        autoWithApart(ids, "[]", "[[" + ids.get(0) + "," + ids.get(0) + "]]").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_PAIR_INVALID"));
+        autoWithApart(ids, "[]", "[[" + ids.get(0) + "]]").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEAM_PAIR_INVALID"));
+    }
+
+    @Test
+    void together와_같은_쌍을_apart에_넣으면_순서가_달라도_400_TEAM_PAIR_INVALID() throws Exception {
+        List<Long> ids = tenPlayers();
+        autoWithApart(ids, "[[" + ids.get(0) + "," + ids.get(1) + "]]", "[[" + ids.get(1) + "," + ids.get(0) + "]]")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("TEAM_PAIR_INVALID"));
+    }
+
+    @Test
+    void 수동에서도_apart가_전달되고_together와_겹치면_400() throws Exception {
+        List<Long> ids = tenPlayers();
+        engineReturns(ids);
+        manualWithApart(ids, "[[" + ids.get(0) + "," + ids.get(2) + "]]").andExpect(status().isOk());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<TogetherPair>> captor = ArgumentCaptor.forClass(Set.class);
+        org.mockito.Mockito.verify(engine).manual(any(), any(), captor.capture(), any());
+        assertThat(captor.getValue()).containsExactly(new TogetherPair(ids.get(0), ids.get(2)));
+
+        postJson("/api/team-maker/manual", manualBody(ids, "[[" + ids.get(0) + "," + ids.get(2) + "]]").replaceFirst("}$",
+                ",\"apart\":[[" + ids.get(2) + "," + ids.get(0) + "]]}"), addr())
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("TEAM_PAIR_INVALID"));
     }
 
     // ---------- 좌우 교체 ----------
@@ -353,7 +434,7 @@ class TeamMakerApiTest {
     @Test
     void 자동_결과가_0개면_422_TEAM_NO_VALID_SPLIT() throws Exception {
         List<Long> ids = tenPlayers();
-        when(engine.auto(any(), any(), any(), any())).thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.NO_VALID_SPLIT));
+        when(engine.auto(any(), any(), any(), any(), any())).thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.NO_VALID_SPLIT));
         auto(ids, "[]").andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("TEAM_NO_VALID_SPLIT"));
     }
@@ -367,7 +448,7 @@ class TeamMakerApiTest {
     @SuppressWarnings("unchecked")
     java.util.Map<Long, Position> capturedFixedLanes() {
         ArgumentCaptor<java.util.Map<Long, Position>> captor = ArgumentCaptor.forClass(java.util.Map.class);
-        org.mockito.Mockito.verify(engine).auto(any(), any(), any(), captor.capture());
+        org.mockito.Mockito.verify(engine).auto(any(), any(), any(), any(), captor.capture());
         return captor.getValue();
     }
 
@@ -423,7 +504,7 @@ class TeamMakerApiTest {
     @Test
     void 고정이_있고_결과가_0개면_422_TEAM_FIXED_LANE_BLOCKED() throws Exception {
         List<Long> ids = tenPlayers();
-        when(engine.auto(any(), any(), any(), any())).thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.NO_VALID_SPLIT));
+        when(engine.auto(any(), any(), any(), any(), any())).thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.NO_VALID_SPLIT));
         postJson("/api/team-maker/auto", autoBodyFixed(ids, "{\"" + ids.get(0) + "\":\"TOP\"}"), addr())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("TEAM_FIXED_LANE_BLOCKED"));
@@ -432,7 +513,7 @@ class TeamMakerApiTest {
     @Test
     void 고정이_전부_null이면_결과_0개는_TEAM_NO_VALID_SPLIT이다() throws Exception {
         List<Long> ids = tenPlayers();
-        when(engine.auto(any(), any(), any(), any())).thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.NO_VALID_SPLIT));
+        when(engine.auto(any(), any(), any(), any(), any())).thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.NO_VALID_SPLIT));
         postJson("/api/team-maker/auto", autoBodyFixed(ids, "{\"" + ids.get(0) + "\":null}"), addr())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("TEAM_NO_VALID_SPLIT"));
@@ -504,7 +585,7 @@ class TeamMakerApiTest {
     @Test
     void 수동_결과가_0개면_422_TEAM_PAIR_UNSATISFIABLE() throws Exception {
         List<Long> ids = tenPlayers();
-        when(engine.manual(any(), any(), any()))
+        when(engine.manual(any(), any(), any(), any()))
                 .thenReturn(TeamMakeResult.failure(TeamMakeResult.Failure.PAIR_UNSATISFIABLE));
         manual(ids, "[]").andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("TEAM_PAIR_UNSATISFIABLE"));
@@ -517,7 +598,7 @@ class TeamMakerApiTest {
         List<Long> ids = tenPlayers();
         CountDownLatch entered = new CountDownLatch(2);
         CountDownLatch release = new CountDownLatch(1);
-        when(engine.auto(any(), any(), any(), any())).thenAnswer(invocation -> {
+        when(engine.auto(any(), any(), any(), any(), any())).thenAnswer(invocation -> {
             entered.countDown();
             release.await(10, TimeUnit.SECONDS);
             return fourOptions(ids);
