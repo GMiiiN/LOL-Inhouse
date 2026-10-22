@@ -3,11 +3,13 @@ package com.lolinhouse.registration;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.lolinhouse.champion.CatalogSnapshot;
@@ -16,6 +18,9 @@ import com.lolinhouse.domain.Position;
 import com.lolinhouse.domain.Side;
 import com.lolinhouse.domain.player.NicknameNormalizer;
 import com.lolinhouse.domain.set.DuelTeamRules;
+import com.lolinhouse.domain.set.FearlessChain.ChainDuel;
+import com.lolinhouse.domain.set.FearlessConflicts;
+import com.lolinhouse.domain.set.FearlessConflicts.Conflict;
 import com.lolinhouse.domain.set.DuelTeamRules.TeamDetection;
 import com.lolinhouse.domain.set.SetDraft;
 import com.lolinhouse.domain.set.SetDraft.DraftPlayer;
@@ -45,29 +50,46 @@ public class SetEvaluator {
 
     public Evaluation evaluate(SetRegistrationRequest request, DuelState duel, PlayerDirectory players,
             CatalogSnapshot catalog, DuplicateLookup duplicates) {
-        return evaluate(request, duel, players, catalog, duplicates, false, null);
+        return evaluate(request, duel, players, catalog, duplicates, false, null, null).evaluation();
     }
 
     /** 결과창 없이 가져오는 세트: 경기 시간은 request.duration이 아니라 인자로 받고, null이면 "모름"으로 지문을 만든다. */
     public Evaluation evaluateImport(SetRegistrationRequest request, Integer durationSec, DuelState duel,
             PlayerDirectory players, CatalogSnapshot catalog, DuplicateLookup duplicates) {
-        return evaluate(request, duel, players, catalog, duplicates, true, durationSec);
+        return evaluate(request, duel, players, catalog, duplicates, true, durationSec, null).evaluation();
     }
 
-    private Evaluation evaluate(SetRegistrationRequest request, DuelState duel, PlayerDirectory players,
-            CatalogSnapshot catalog, DuplicateLookup duplicates, boolean imported, Integer importedDuration) {
+    /**
+     * 저장된 세트 수정용 평가. 세트 번호는 저장 번호, 위쪽 팀은 수정 전 A팀과의 겹침으로 판별하고(팀 변경 감지는 항상 NONE),
+     * 피어리스는 앞쪽 겹침이 오류·뒤쪽 겹침이 경고(+fearlessConflicts)다. 경기 시간이 빈 문자열이면 "모름"이다.
+     * duplicates는 자기 자신을 뺀 조회여야 한다.
+     */
+    public EditResult evaluateEdit(SetRegistrationRequest request, EditContext edit, PlayerDirectory players,
+            CatalogSnapshot catalog, DuplicateLookup duplicates) {
+        Set<String> front = new HashSet<>(FearlessConflicts.restrictedAt(edit.sessionDuels(), edit.duelId(),
+                edit.setNo(), edit.otherPicks()));
+        DuelState state = new DuelState(edit.duelId(), edit.setNo(), null, front);
+        return evaluate(request, state, players, catalog, duplicates, false, null, edit);
+    }
+
+    private EditResult evaluate(SetRegistrationRequest request, DuelState duel, PlayerDirectory players,
+            CatalogSnapshot catalog, DuplicateLookup duplicates, boolean imported, Integer importedDuration,
+            EditContext edit) {
         List<String> errors = new ArrayList<>();
         int setNo = duel.nextSetNo();
 
         LocalDate shotDate = parseDate(request.shotDate(), errors);
-        Integer durationSec = imported ? importedDuration : parseDuration(request.duration(), errors);
+        boolean durationUnknown = edit != null && (request.duration() == null || request.duration().isBlank());
+        Integer durationSec = imported ? importedDuration : durationUnknown ? null
+                : parseDuration(request.duration(), errors);
 
         TeamRows top = resolveRows("top", request.top(), players, errors);
         TeamRows bottom = resolveRows("bottom", request.bottom(), players, errors);
         checkNewNicknames(request, players, errors);
         checkChampionIds(request, catalog, errors);
 
-        Judgement judgement = judge(request, duel, top, bottom, setNo, errors);
+        Judgement judgement = edit != null ? judgeEdit(edit, top, errors)
+                : judge(request, duel, top, bottom, setNo, errors);
 
         ValidationResult validation = SetDraftValidator.validate(toDraft(request, top, bottom),
                 new ValidationContext(setNo, judgement.uncertain() ? null : judgement.topTeam(),
@@ -76,7 +98,7 @@ public class SetEvaluator {
 
         String fingerprint = null;
         DuplicateSet duplicate = null;
-        if (shotDate != null && (durationSec != null || imported)) {
+        if (shotDate != null && (durationSec != null || imported || durationUnknown)) {
             fingerprint = fingerprint(request, shotDate, durationSec, errors);
             if (fingerprint != null) {
                 duplicate = duplicates.find(fingerprint).orElse(null);
@@ -85,9 +107,18 @@ public class SetEvaluator {
 
         Side team1Side = judgement.topTeam() == null ? null
                 : judgement.topTeam() == DuelTeam.TEAM1 ? request.topSide() : request.topSide().opposite();
-        return new Evaluation(setNo, judgement.topTeam(),
+        List<String> warnings = validation.warnings();
+        List<Conflict> rearConflicts = List.of();
+        if (edit != null) {
+            warnings = new ArrayList<>(warnings);
+            adjacentTeamWarning(edit, judgement, top, bottom).ifPresent(warnings::add);
+            rearConflicts = rearConflicts(request, edit);
+            warnings.addAll(conflictWarnings(rearConflicts));
+        }
+        Evaluation evaluation = new Evaluation(setNo, judgement.topTeam(),
                 new Detection(judgement.method(), judgement.overlap(), judgement.uncertain()), team1Side, fingerprint,
-                duplicate, List.copyOf(errors), validation.warnings(), judgement.teamChange());
+                duplicate, List.copyOf(errors), List.copyOf(warnings), judgement.teamChange());
+        return new EditResult(evaluation, rearConflicts);
     }
 
     /** 위쪽 팀 판별 + 팀 변경 감지 결과. */
@@ -274,6 +305,61 @@ public class SetEvaluator {
                 complete ? bottom.byPlayer() : null);
         return new Judgement(detection.team(), DetectionMethod.OVERLAP, detection.overlap(),
                 change.kind() == Kind.RESHUFFLE, change);
+    }
+
+    // 수정: 위쪽 팀이 수정 전 이 세트의 A팀과 3명 이상 겹치면 A팀. 팀 변경 감지는 하지 않는다
+    private static Judgement judgeEdit(EditContext edit, TeamRows top, List<String> errors) {
+        TeamChange none = new TeamChange(Kind.NONE, 0, List.of());
+        if (top.pending() || !top.hasDistinctKeys() || edit.oldTeam1Ids().size() != 5) {
+            errors.add("선수를 모두 고르면 A팀/B팀을 판별합니다.");
+            return new Judgement(null, DetectionMethod.PENDING, null, false, none);
+        }
+        TeamDetection detection = DuelTeamRules.detectTopTeam(edit.oldTeam1Ids(), new HashSet<>(top.keys()));
+        return new Judgement(detection.team(), DetectionMethod.OVERLAP, detection.overlap(), false, none);
+    }
+
+    // 새 A팀이 앞뒤 유효 세트의 A팀과 3명 미만 겹치면 경고(저장은 막지 않는다)
+    private static Optional<String> adjacentTeamWarning(EditContext edit, Judgement judgement, TeamRows top,
+            TeamRows bottom) {
+        if (judgement.topTeam() == null || bottom.pending() || !bottom.hasDistinctKeys()) {
+            return Optional.empty();
+        }
+        Set<String> team1 = new HashSet<>(judgement.topTeam() == DuelTeam.TEAM1 ? top.keys() : bottom.keys());
+        for (Set<String> neighbor : Arrays.asList(edit.previousTeam1Ids(), edit.nextTeam1Ids())) {
+            if (neighbor != null && neighbor.size() == 5) {
+                Set<String> common = new HashSet<>(team1);
+                common.retainAll(neighbor);
+                if (common.size() < 3) {
+                    return Optional.of("앞뒤 세트와 A팀 구성이 맞지 않습니다. 선수 연결을 확인하세요.");
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    // 이 세트의 픽 중 뒤쪽(뒤 번호·뒤 대결) 유효 세트와 겹친 것. 앞쪽 겹침은 도메인 검증이 오류로 낸다
+    private static List<Conflict> rearConflicts(SetRegistrationRequest request, EditContext edit) {
+        List<String> picks = new ArrayList<>();
+        for (TeamInput team : List.of(request.top(), request.bottom())) {
+            team.rows().stream().map(RowInput::championKey).filter(key -> key != null && !key.isBlank())
+                    .forEach(picks::add);
+        }
+        int ownSeq = edit.sessionDuels().stream().filter(d -> d.duelId() == edit.duelId()).findFirst()
+                .map(ChainDuel::seq).orElse(0);
+        return FearlessConflicts.conflicts(edit.sessionDuels(), edit.setId(), edit.duelId(), edit.setNo(), picks,
+                edit.otherPicks()).stream()
+                .filter(c -> c.duelSeq() > ownSeq || (c.duelId() == edit.duelId() && c.setNo() > edit.setNo()))
+                .toList();
+    }
+
+    private static List<String> conflictWarnings(List<Conflict> conflicts) {
+        Map<Long, List<Conflict>> bySet = new LinkedHashMap<>();
+        conflicts.forEach(c -> bySet.computeIfAbsent(c.setId(), id -> new ArrayList<>()).add(c));
+        List<String> warnings = new ArrayList<>();
+        bySet.values().forEach(group -> warnings.add("뒤쪽 세트(대결 " + group.get(0).duelSeq() + "의 "
+                + group.get(0).setNo() + "세트)와 같은 챔피언을 씁니다: "
+                + String.join(", ", group.stream().map(Conflict::championKey).toList())));
+        return warnings;
     }
 
     // ----- 6. 도메인 검증용 초안 -----

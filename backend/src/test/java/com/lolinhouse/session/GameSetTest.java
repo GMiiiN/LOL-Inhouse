@@ -142,4 +142,71 @@ class GameSetTest {
         assertThat(ban.championKey()).isEqualTo("Zed");
         assertThat(set.bans()).containsExactly(ban);
     }
+
+    @Test
+    void reviseRecomputesFingerprintAndKeepsDuelNumberImageAndCreatedAt() throws Exception {
+        GameSet set = newSet(new DisplayedTotals(26, 8, 40, 39852), new DisplayedTotals(8, 26, 12, 29846), "h".repeat(64),
+                "k/key.png");
+        java.time.Instant before = java.time.Instant.parse("2026-01-01T00:00:00Z");
+        var updatedAtField = GameSet.class.getDeclaredField("updatedAt");
+        updatedAtField.setAccessible(true);
+        updatedAtField.set(set, before);
+
+        set.revise(Side.RED, DuelTeam.TEAM2, DuelTeam.TEAM1, LocalDate.of(2026, 10, 12), null,
+                new DisplayedTotals(30, 9, 41, 40000), new DisplayedTotals(9, 30, 10, 30000));
+
+        assertThat(set.fingerprint()).isEqualTo("2026-10-12|?|9:30000|30:40000");
+        assertThat(set.durationSec()).isNull();
+        assertThat(set.team1Side()).isEqualTo(Side.RED);
+        assertThat(set.winnerTeam()).isEqualTo(DuelTeam.TEAM2);
+        assertThat(set.topTeam()).isEqualTo(DuelTeam.TEAM1);
+        assertThat(set.team1Totals()).isEqualTo(new DisplayedTotals(30, 9, 41, 40000));
+        assertThat(set.setNo()).isEqualTo(1);
+        assertThat(set.duelId()).isEqualTo(1L);
+        assertThat(set.imageHash()).isEqualTo("h".repeat(64));
+        assertThat(set.imageKey()).isEqualTo("k/key.png");
+        assertThat(set.updatedAt()).isAfter(before);
+    }
+
+    @Test
+    void reviseWithKnownDurationUsesSecondsInFingerprint() {
+        GameSet set = newSet();
+
+        set.revise(Side.BLUE, DuelTeam.TEAM1, DuelTeam.TEAM2, DATE, 1500, new DisplayedTotals(26, 8, 40, 39852),
+                new DisplayedTotals(8, 26, 12, 29846));
+
+        assertThat(set.fingerprint()).isEqualTo("2026-10-11|1500|8:29846|26:39852");
+    }
+
+    @Test
+    void reviseRejectsDeletedSet() {
+        GameSet set = newSet();
+        set.markDeleted();
+
+        assertThatThrownBy(() -> set.revise(Side.BLUE, DuelTeam.TEAM1, DuelTeam.TEAM2, DATE, 1500,
+                new DisplayedTotals(26, 8, 40, 39852), new DisplayedTotals(8, 26, 12, 29846)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void clearRecordsEmptiesPlayersAndBans() {
+        GameSet set = newSet();
+        set.addPlayer(1L, DuelTeam.TEAM1, com.lolinhouse.domain.Position.TOP, 1, "Zed", 1, 1, 1, 1, 1);
+        set.addBan(1, Side.BLUE, "Zed");
+
+        set.clearRecords();
+
+        assertThat(set.players()).isEmpty();
+        assertThat(set.bans()).isEmpty();
+    }
+
+    @Test
+    void 수정_시각은_같은_시각이나_시계_역행에도_반드시_앞으로_간다() {
+        java.time.Instant future = java.time.Instant.now().plus(java.time.Duration.ofDays(1))
+                .truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        assertThat(GameSet.advance(future)).isEqualTo(future.plus(1, java.time.temporal.ChronoUnit.MICROS));
+        assertThat(GameSet.advance(null)).isNotNull();
+        java.time.Instant past = java.time.Instant.parse("2000-01-01T00:00:00Z");
+        assertThat(GameSet.advance(past)).isAfter(past);
+    }
 }

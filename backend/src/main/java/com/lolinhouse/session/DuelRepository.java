@@ -16,6 +16,9 @@ public interface DuelRepository extends JpaRepository<Duel, Long> {
     /** 묶음 안 대결 목록, seq 오름차순. */
     List<Duel> findBySessionIdOrderBySeqAsc(Long sessionId);
 
+    /** 여러 묶음의 대결 전부(체인 계산용). */
+    List<Duel> findBySessionIdIn(Collection<Long> sessionIds);
+
     /** 다음 대결 번호 계산용: 대결이 하나도 없으면 0. 새 seq = 이 값 + 1. */
     @Query("select coalesce(max(d.seq), 0) from Duel d where d.sessionId = :sessionId")
     int findMaxSeq(@Param("sessionId") Long sessionId);

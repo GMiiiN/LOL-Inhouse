@@ -320,7 +320,8 @@ class RecordApiTest {
 
         withImage.markDeleted();
         gameSets.saveAndFlush(withImage);
-        mockMvc.perform(get("/api/admin/sets/" + withImage.id() + "/image")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/admin/sets/" + withImage.id() + "/image")).andExpect(status().isOk())
+                .andExpect(content().bytes(bytes));
     }
 
     @Test

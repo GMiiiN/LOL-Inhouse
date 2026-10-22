@@ -81,6 +81,14 @@ const MESSAGES: Record<string, string | ((error: ApiError) => string)> = {
   SET_NOT_FOUND: '세트를 찾을 수 없어요. 삭제되었거나 없는 세트예요.',
   SET_IMAGE_NOT_FOUND: '원본 결과창 이미지가 없어요.',
   INVALID_QUERY: '조회 조건이 올바르지 않아요. 기간의 앞뒤 날짜와 선택한 조건을 확인해 주세요.',
+
+  // ---- M6 세트 삭제·복구 ----
+  SET_ALREADY_DELETED: '이미 삭제된 세트예요.',
+  SET_NOT_DELETED: '삭제된 세트가 아니에요. 목록을 새로 불러와 주세요.',
+  RESTORE_FINGERPRINT_CONFLICT: '같은 경기가 이미 등록돼 있어 복구할 수 없어요. 먼저 그 세트를 정리해 주세요.',
+  RESTORE_SET_NO_CONFLICT: '같은 대결에 같은 번호 세트가 있어 복구할 수 없어요. 먼저 그 세트를 정리해 주세요.',
+  SET_MODIFIED: '다른 곳에서 먼저 수정·삭제됐어요. 새로 불러와 주세요',
+  SET_DELETED: '삭제된 세트는 먼저 복구해야 고칠 수 있어요',
 }
 
 // 추출 작업이 FAILED가 된 이유(작업 상태의 errorCode). 요청 오류와 달리 HTTP 오류가 아니라 작업 상태 값이다.

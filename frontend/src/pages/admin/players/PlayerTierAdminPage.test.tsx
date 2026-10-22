@@ -48,7 +48,8 @@ describe('PlayerTierAdminPage', () => {
     mockFetch(baseRoutes)
     renderApp('/admin/players')
 
-    expect(await screen.findByRole('button', { name: /홍길동 수정/ })).toBeInTheDocument()
+    // 첫 렌더는 티어리스트·프로필·추천 세 요청을 기다려 전체 병렬 실행에서 느릴 수 있다
+    expect(await screen.findByRole('button', { name: /홍길동 수정/ }, { timeout: 5000 })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '편집 모드' })).not.toBeInTheDocument()
   })
 
@@ -214,6 +215,18 @@ describe('PlayerTierAdminPage', () => {
 
     await waitForCall(() => calls.find((c) => c.method === 'DELETE'))
     await waitFor(() => expect(calls.filter((c) => c.path === '/api/tier-list').length).toBeGreaterThan(1))
+  })
+
+  it('미등록 선수마다 그 선수가 나온 경기 목록 링크가 있다', async () => {
+    const user = userEvent.setup()
+    mockFetch(baseRoutes)
+    renderApp('/admin/players')
+    const summary = await screen.findByText('미등록 선수 1명')
+    await user.click(summary)
+    expect(within(summary.closest('details') as HTMLElement).getByRole('link', { name: '나온 경기 보기' })).toHaveAttribute(
+      'href',
+      '/records?player=3',
+    )
   })
 
   it('미등록 선수 목록에서 실명·라인을 넣으면 PUT으로 등록한다', async () => {

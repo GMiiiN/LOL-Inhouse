@@ -71,4 +71,32 @@ class BanOrderTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("진영");
     }
+
+    @Test
+    void 역변환은_build와_왕복하면_위쪽_블루_레드_모두_원래_칸_순서로_돌아온다() {
+        for (Side topSide : Side.values()) {
+            BanOrder.TeamBans back = BanOrder.split(topSide, BanOrder.build(topSide, TOP_BANS, BOTTOM_BANS));
+
+            assertThat(back.top()).containsExactlyElementsOf(TOP_BANS);
+            assertThat(back.bottom()).containsExactlyElementsOf(BOTTOM_BANS);
+        }
+    }
+
+    @Test
+    void 역변환은_턴_순서가_섞여_들어와도_턴_번호로_정렬한다() {
+        List<BanTurn> shuffled = new java.util.ArrayList<>(BanOrder.build(Side.RED, TOP_BANS, BOTTOM_BANS));
+        java.util.Collections.reverse(shuffled);
+
+        BanOrder.TeamBans back = BanOrder.split(Side.RED, shuffled);
+
+        assertThat(back.top()).containsExactlyElementsOf(TOP_BANS);
+        assertThat(back.bottom()).containsExactlyElementsOf(BOTTOM_BANS);
+    }
+
+    @Test
+    void 역변환은_밴이_모자라면_예외() {
+        List<BanTurn> turns = BanOrder.build(Side.BLUE, TOP_BANS, BOTTOM_BANS).subList(0, 9);
+
+        assertThatThrownBy(() -> BanOrder.split(Side.BLUE, turns)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

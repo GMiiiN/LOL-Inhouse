@@ -111,3 +111,11 @@
 .set-detail .ci.sm { width: 48px; height: 48px; border-radius: 8px; }
 .set-detail .ban-item .ci.sm { width: 44px; height: 44px; }
 .set-detail .set-detail-sub { font-size: 20px; }
+
+/* M6: 삭제·복구 */
+.deleted-set-actions { display: flex; gap: 8px; align-items: center; }
+.deleted-set-note-row td { padding-top: 0; }
+.set-admin-actions { display: inline-flex; flex-direction: column; gap: 8px; }
+.set-admin-actions button, .set-admin-actions a, .deleted-set-actions button { background: transparent; color: var(--muted); border: 1px solid var(--line2); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.set-admin-actions a { text-decoration: none; text-align: center; }
+.set-admin-actions button:hover:not(:disabled), .deleted-set-actions button:hover:not(:disabled) { color: var(--ink); }

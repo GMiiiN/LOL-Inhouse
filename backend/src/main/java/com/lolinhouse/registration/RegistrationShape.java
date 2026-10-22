@@ -12,12 +12,12 @@ import com.lolinhouse.common.web.ApiException;
  * 역할: Bean Validation으로 표현하기 어려운 요청 "형태" 규칙(팀 안 screenRow 중복, resolution과 playerId·addAlias의 짝)을 검사해
  * 400 VALIDATION_FAILED(+errors[{field, message}])로 돌려준다. 내용 규칙(빈 챔피언, 중복, 피어리스 등)은 SetEvaluator가 422로 다룬다.
  */
-final class RegistrationShape {
+public final class RegistrationShape {
 
     private RegistrationShape() {
     }
 
-    static void validate(SetRegistrationRequest request) {
+    public static void validate(SetRegistrationRequest request) {
         List<Map<String, String>> errors = new ArrayList<>();
         checkTeam("top", request.top(), errors);
         checkTeam("bottom", request.bottom(), errors);

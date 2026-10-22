@@ -2,6 +2,8 @@
 import { cleanup, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { jsonResponse, mockFetch } from './test/mockFetch'
+import { champions } from './test/registrationFixtures'
+import { buildSetForm } from './test/setFormFixtures'
 import { DEFAULT_SCORE_TABLE } from './test/tierListFixtures'
 import { renderApp } from './test/renderApp'
 
@@ -32,6 +34,18 @@ describe('routes', () => {
     }
   })
 
+  it('로그인한 상태에서 /admin/sets/:setId/edit는 세트 수정 화면을 그린다', async () => {
+    mockFetch({
+      'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
+      'GET /api/admin/sets/7/form': () => jsonResponse(200, buildSetForm({ deleted: true })),
+      'GET /api/admin/champions': () => jsonResponse(200, champions),
+    })
+    renderApp('/admin/sets/7/edit')
+
+    expect(await screen.findByRole('heading', { level: 1, name: '세트 수정' })).toBeInTheDocument()
+    expect(await screen.findByText('대결 2 · 2세트 수정')).toBeInTheDocument()
+  })
+
   it('/tiers는 로그인 없이 공개 헤더 안에서 열리고 편집 버튼이 없다', async () => {
     mockFetch({ 'GET /api/tier-list': () => jsonResponse(200, { scoreTable: null, players: [] }) })
     renderApp('/tiers')
@@ -56,6 +70,18 @@ describe('routes', () => {
     expect(await screen.findByRole('heading', { name: '점수 설정' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '담당자 메뉴' })).toHaveTextContent('점수 설정')
     expect(await screen.findByLabelText('1티어')).toHaveValue(60)
+  })
+
+  it('로그인한 상태에서 /admin/history는 기록 관리(삭제된 세트)를 그리고 메뉴에 기록 관리가 있다', async () => {
+    mockFetch({
+      'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
+      'GET /api/admin/deleted-sets': () => jsonResponse(200, []),
+    })
+    renderApp('/admin/history')
+
+    expect(await screen.findByRole('heading', { level: 1, name: '기록 관리' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '담당자 메뉴' })).toHaveTextContent('기록 관리')
+    expect(await screen.findByText('삭제된 세트가 없어요')).toBeInTheDocument()
   })
 
   it('로그인한 상태에서 /admin/players는 담당자 헤더와 새 선수 관리(티어리스트 + 사람 추가)를 그린다', async () => {

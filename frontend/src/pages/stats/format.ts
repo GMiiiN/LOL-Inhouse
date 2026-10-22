@@ -24,3 +24,19 @@ export function formatGold(gold: number): string {
 export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 100)}%`
 }
+
+// ISO 시각 → 한국 시간 "MM-DD HH:mm". 읽을 수 없으면 원문 그대로
+export function formatSeoulDateTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
+  return `${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
+}

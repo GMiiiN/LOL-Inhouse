@@ -2,6 +2,7 @@ package com.lolinhouse.domain.set;
 
 import com.lolinhouse.domain.Side;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -46,6 +47,25 @@ public final class BanOrder {
             turns.add(new BanTurn(2 * i + 2, Side.RED, redBans.get(i)));
         }
         return turns;
+    }
+
+    /** 팀별 화면 칸 순서의 밴 5개씩. */
+    public record TeamBans(List<String> top, List<String> bottom) {
+    }
+
+    /** build의 역변환: 저장된 턴 목록과 위쪽 진영에서 위쪽·아래쪽 팀의 화면 칸 순서 밴 5개를 되돌린다. */
+    public static TeamBans split(Side topSide, List<BanTurn> turns) {
+        if (topSide == null) {
+            throw new IllegalArgumentException("위쪽 팀 진영을 선택해야 합니다.");
+        }
+        List<String> blue = turns.stream().sorted(Comparator.comparingInt(BanTurn::turn))
+                .filter(t -> t.side() == Side.BLUE).map(BanTurn::championKey).toList();
+        List<String> red = turns.stream().sorted(Comparator.comparingInt(BanTurn::turn))
+                .filter(t -> t.side() == Side.RED).map(BanTurn::championKey).toList();
+        if (blue.size() != BANS_PER_TEAM || red.size() != BANS_PER_TEAM) {
+            throw new IllegalArgumentException("팀당 밴은 정확히 5개여야 합니다.");
+        }
+        return topSide == Side.BLUE ? new TeamBans(blue, red) : new TeamBans(red, blue);
     }
 
     private static void validate(List<String> bans) {

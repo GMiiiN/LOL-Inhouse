@@ -16,10 +16,10 @@ type SetRowProps = {
   set: SetView
   defaultExpanded?: boolean // 기본 접힘
   showDuelLink?: boolean // 홈·프로필처럼 대결 맥락이 없는 곳에서 "대결 N" 링크를 함께 보여 준다
-  showNames?: boolean // 접힌 줄에서도 챔피언 아이콘 아래에 선수 이름을 보여 준다(홈·프로필 최근 경기)
+  showNames?: boolean // 접힌 줄에서도 챔피언 아이콘 아래에 선수 이름을 보여 준다(기본 켬: 기록·대결·홈·프로필)
 }
 
-export function SetRow({ set, defaultExpanded = false, showDuelLink = false, showNames = false }: SetRowProps) {
+export function SetRow({ set, defaultExpanded = false, showDuelLink = false, showNames = true }: SetRowProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const { blue, red } = sidesOf(set)
   const team1 = set.teams[0]

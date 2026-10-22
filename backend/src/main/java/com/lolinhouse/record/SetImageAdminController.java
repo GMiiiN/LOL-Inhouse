@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 역할: 담당자 전용 원본 결과창 이미지 보기(/api/admin/** 인가는 SecurityConfig). 공개 응답에는 이미지 키가 없고 이 경로로만 바이트를 준다.
- * 없는 세트·삭제된 세트·수동 입력(이미지 없음)·저장소에 파일 없음은 모두 404 SET_IMAGE_NOT_FOUND.
+ * 역할: 담당자 전용 원본 결과창 이미지 보기(/api/admin/** 인가는 SecurityConfig). 공개 응답에는 이미지 키가 없고 이 경로로만 바이트를 준다. 삭제된 세트의 원본도 담당자는 볼 수 있다(복구 판단용).
+ * 없는 세트·수동 입력(이미지 없음)·저장소에 파일 없음은 모두 404 SET_IMAGE_NOT_FOUND.
  */
 @RestController
 public class SetImageAdminController {
@@ -29,7 +29,7 @@ public class SetImageAdminController {
 
     @GetMapping("/api/admin/sets/{id}/image")
     ResponseEntity<byte[]> image(@PathVariable long id) {
-        GameSet set = gameSets.findById(id).filter(s -> !s.isDeleted()).orElseThrow(() -> notFound(id));
+        GameSet set = gameSets.findById(id).orElseThrow(() -> notFound(id));
         String key = set.imageKey();
         if (key == null) {
             throw notFound(id);

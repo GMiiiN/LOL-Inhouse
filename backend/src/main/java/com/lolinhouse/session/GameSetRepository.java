@@ -4,7 +4,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -51,6 +53,42 @@ public interface GameSetRepository extends JpaRepository<GameSet, Long> {
     @Query("select d.sessionId as sessionId, count(g) as setCount, count(g) - count(g.deletedAt) as activeSetCount from GameSet g, Duel d "
             + "where g.duelId = d.id and d.sessionId in :sessionIds group by d.sessionId")
     List<SessionSetCount> countBySessionIds(@Param("sessionIds") Collection<Long> sessionIds);
+
+    /** 세트 행을 FOR UPDATE로 잠그고 읽는다(삭제·복구·수정이 줄을 선다). 잠금 순서는 묶음 → 대결 → 세트. 트랜잭션 안에서 호출한다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select g from GameSet g where g.id = :id")
+    Optional<GameSet> findByIdForUpdate(@Param("id") Long id);
+
+    /** 삭제 표시된 세트를 최근 삭제순으로(같은 시각이면 id 큰 순). */
+    List<GameSet> findByDeletedAtIsNotNullOrderByDeletedAtDescIdDesc();
+
+    /** 대결들의 유효 세트(번호 충돌 확인용). */
+    List<GameSet> findByDuelIdInAndDeletedAtIsNull(Collection<Long> duelIds);
+
+    /** 지문 목록 중 유효 세트가 가진 것(복구 지문 충돌 확인용). */
+    List<GameSet> findByFingerprintInAndDeletedAtIsNull(Collection<String> fingerprints);
+
+    /** 대결들의 유효 세트 픽(세트·대결·번호 포함). 피어리스 충돌 계산용. */
+    @Query("select p.gameSet.id as setId, p.gameSet.duelId as duelId, p.gameSet.setNo as setNo, p.championKey as championKey "
+            + "from GameSetPlayer p where p.gameSet.duelId in :duelIds and p.gameSet.deletedAt is null")
+    List<PickProjection> findActivePicksByDuelIds(@Param("duelIds") Collection<Long> duelIds);
+
+    /** 지정한 세트들의 픽(삭제 여부 무관). */
+    @Query("select p.gameSet.id as setId, p.gameSet.duelId as duelId, p.gameSet.setNo as setNo, p.championKey as championKey "
+            + "from GameSetPlayer p where p.gameSet.id in :setIds")
+    List<PickProjection> findPicksBySetIds(@Param("setIds") Collection<Long> setIds);
+
+    /** 픽 조회 결과 한 줄. */
+    interface PickProjection {
+
+        Long getSetId();
+
+        Long getDuelId();
+
+        int getSetNo();
+
+        String getChampionKey();
+    }
 
     /** 묶음별 세트 수 조회 결과 한 줄. */
     interface SessionSetCount {
