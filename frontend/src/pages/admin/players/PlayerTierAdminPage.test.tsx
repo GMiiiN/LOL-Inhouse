@@ -216,6 +216,18 @@ describe('PlayerTierAdminPage', () => {
     await waitFor(() => expect(calls.filter((c) => c.path === '/api/tier-list').length).toBeGreaterThan(1))
   })
 
+  it('미등록 선수마다 그 선수가 나온 경기 목록 링크가 있다', async () => {
+    const user = userEvent.setup()
+    mockFetch(baseRoutes)
+    renderApp('/admin/players')
+    const summary = await screen.findByText('미등록 선수 1명')
+    await user.click(summary)
+    expect(within(summary.closest('details') as HTMLElement).getByRole('link', { name: '나온 경기 보기' })).toHaveAttribute(
+      'href',
+      '/records?player=3',
+    )
+  })
+
   it('미등록 선수 목록에서 실명·라인을 넣으면 PUT으로 등록한다', async () => {
     const user = userEvent.setup()
     const { calls } = mockFetch({
