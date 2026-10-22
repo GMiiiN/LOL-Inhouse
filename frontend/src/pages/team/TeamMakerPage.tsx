@@ -12,7 +12,14 @@ import { FixedLaneBox } from './FixedLaneBox'
 import { ManualPicker } from './ManualPicker'
 import { TeamResults } from './TeamResults'
 import { TogetherPairs } from './TogetherPairs'
-import { AUTO_PARTICIPANT_COUNT, fixedLanesOf, useTeamMakerState } from './useTeamMakerState'
+import {
+  AUTO_PARTICIPANT_COUNT,
+  fixedLanesOf,
+  isGapComplete,
+  needsGap,
+  tierGapsOf,
+  useTeamMakerState,
+} from './useTeamMakerState'
 
 type Props = {
   // 테스트에서 코인토스의 난수·지연을 주입한다
@@ -42,7 +49,13 @@ export function TeamMakerPage({ random, coinDelayMs }: Props = {}) {
         })
       }
       const picks = Object.fromEntries(POSITIONS.map((position) => [position, state.pick[position]])) as TeamMakerManualRequest['picks']
-      return postTeamManual({ picks, together: state.together, ...(state.apart.length > 0 && { apart: state.apart }) })
+      const tierGaps = tierGapsOf(state, players ?? [])
+      return postTeamManual({
+        picks,
+        together: state.together,
+        ...(state.apart.length > 0 && { apart: state.apart }),
+        ...(Object.keys(tierGaps).length > 0 && { tierGaps }),
+      })
     },
     onSuccess: (response) =>
       setRun((current) => ({ id: (current?.id ?? 0) + 1, response, fixedLanes: fixedLanesOf(state) })),
@@ -55,10 +68,11 @@ export function TeamMakerPage({ random, coinDelayMs }: Props = {}) {
     make.reset()
   }
 
-  const ready =
-    state.mode === 'auto'
-      ? state.chosen.length === AUTO_PARTICIPANT_COUNT
-      : POSITIONS.every((position) => state.pick[position].every((id) => id !== null))
+  const picksDone = POSITIONS.every((position) => state.pick[position].every((id) => id !== null))
+  const gapsDone = POSITIONS.every(
+    (position) => !needsGap(position, state.pick, players ?? []) || isGapComplete(state.gaps[position]),
+  )
+  const ready = state.mode === 'auto' ? state.chosen.length === AUTO_PARTICIPANT_COUNT : picksDone && gapsDone
 
   if (tierList.isPending || tierList.isError) {
     return (
@@ -97,7 +111,14 @@ export function TeamMakerPage({ random, coinDelayMs }: Props = {}) {
             />
           </>
         ) : (
-          <ManualPicker players={players ?? []} pick={state.pick} onPick={team.setPick} onClear={team.clearPick} />
+          <ManualPicker
+            players={players ?? []}
+            pick={state.pick}
+            gaps={state.gaps}
+            onGap={team.setGap}
+            onPick={team.setPick}
+            onClear={team.clearPick}
+          />
         )}
       </section>
 
@@ -130,7 +151,11 @@ export function TeamMakerPage({ random, coinDelayMs }: Props = {}) {
         )}
         {!ready && (
           <p className="tm-help">
-            {state.mode === 'auto' ? `참가자를 10명 골라 주세요. 지금 ${state.chosen.length}명이에요.` : '모든 라인에 2명씩 골라 주세요.'}
+            {state.mode === 'auto'
+              ? `참가자를 10명 골라 주세요. 지금 ${state.chosen.length}명이에요.`
+              : picksDone
+                ? '티어 없는 사람이 있는 라인은 더 잘하는 사람과 티어 차이를 골라 주세요.'
+                : '모든 라인에 2명씩 골라 주세요.'}
           </p>
         )}
         <div>

@@ -69,13 +69,23 @@ export type TeamMakerAutoRequest = {
   apart?: TogetherPair[] // 꼭 다른 팀. 비면 생략
   fixedLanes?: Record<number, Position> // 라인 고정(자동만). JSON 키는 문자열 선수 id. 생략·빈 맵 = 고정 없음
 }
+// stronger는 그 라인 picks 배열의 인덱스(0 = 첫째, 1 = 둘째), null = 비슷함(tiers 0). tiers는 0~5
+export type TierGapRequest = { stronger: 0 | 1 | null; tiers: number }
 export type TeamMakerManualRequest = {
   picks: Record<Position, [number, number]> // 라인마다 [첫째, 둘째]
   together: TogetherPair[]
   apart?: TogetherPair[]
+  tierGaps?: Partial<Record<Position, TierGapRequest>> // 그 라인에 티어 없는 사람이 있는 라인만(필수). 둘 다 있으면 생략
 }
-// 블루 칸이 A팀이다. tier·sub가 null이면 티어 없는 라인(점수는 대체 점수)
-export type SlotView = { playerId: number; position: Position; tier: Tier | null; sub: TierSub | null; score: number }
+// 블루 칸이 A팀이다. tier·sub가 null이면 티어 없는 라인(점수는 대체 점수). estimated면 티어 차이 입력으로 정한 추정 티어
+export type SlotView = {
+  playerId: number
+  position: Position
+  tier: Tier | null
+  sub: TierSub | null
+  score: number
+  estimated?: boolean
+}
 export type TeamOption = {
   blue: SlotView[] // 탑~서폿 순서 5개
   red: SlotView[]
@@ -86,7 +96,7 @@ export type TeamOption = {
   cost: number
   total: number // 교체 후에는 프런트가 blueSum + redSum으로 다시 계산한다
 }
-export type MatrixCell = { score: number; tier: Tier | null; sub: TierSub | null; hasTier: boolean }
+export type MatrixCell = { score: number; tier: Tier | null; sub: TierSub | null; hasTier: boolean; estimated?: boolean }
 export type ScoreMatrix = Record<string, Record<Position, MatrixCell>> // 키는 선수 id 문자열
 export type TeamMakerResponse = {
   options: TeamOption[] // 1~4개, 좌우 교체가 이미 반영됨
@@ -104,7 +114,8 @@ export const TIER_TEAM_ERROR_CODES = [
   'TEAM_PARTICIPANT_COUNT',
   'TEAM_DUPLICATE_PARTICIPANT',
   'TEAM_LANE_PICK_INCOMPLETE',
-  'TEAM_LANE_TIER_MISSING',
+  'TEAM_TIER_GAP_REQUIRED',
+  'TEAM_TIER_GAP_INVALID',
   'TEAM_PLAYER_NOT_FOUND',
   'TEAM_PAIR_INVALID',
   'TEAM_NO_VALID_SPLIT',

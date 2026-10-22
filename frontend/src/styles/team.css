@@ -34,6 +34,7 @@
 
 .tm-picker { display: grid; gap: 8px; }
 .tm-pickrow { display: grid; grid-template-columns: 64px 1fr 1fr; gap: 8px; align-items: center; }
+.tm-gap { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 0.9em; }
 .tm-lane { font-weight: 700; }
 .tm-page select { background: var(--sunk); border: 1px solid var(--line2); border-radius: 8px; padding: 8px 10px; min-width: 0; color: var(--ink); font: inherit; }
 
@@ -105,6 +106,7 @@
 }
 @media (max-width: 640px) {
   .tm-pickrow { grid-template-columns: 1fr; }
+  .tm-gap { grid-column: 1; }
   .tm-lanerow { grid-template-columns: 1fr 56px 1fr; }
 }
 

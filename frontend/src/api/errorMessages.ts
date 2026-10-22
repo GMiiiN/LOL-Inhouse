@@ -62,7 +62,8 @@ const MESSAGES: Record<string, string | ((error: ApiError) => string)> = {
   TEAM_PARTICIPANT_COUNT: '참가자를 정확히 10명 골라 주세요.',
   TEAM_DUPLICATE_PARTICIPANT: '같은 사람이 두 번 선택됐어요.',
   TEAM_LANE_PICK_INCOMPLETE: '모든 라인에 2명씩 골라 주세요.',
-  TEAM_LANE_TIER_MISSING: '그 라인 티어가 없는 사람이 들어 있어요. 티어가 있는 사람만 고를 수 있어요.',
+  TEAM_TIER_GAP_REQUIRED: '티어 없는 사람이 있는 라인은 더 잘하는 사람과 티어 차이를 입력해 주세요.',
+  TEAM_TIER_GAP_INVALID: '티어 차이 입력이 올바르지 않아요. 0~5티어 사이로 골라 주세요.',
   TEAM_PLAYER_NOT_FOUND: '선택한 선수를 찾을 수 없어요. 티어리스트를 새로 불러온 뒤 다시 골라 주세요.',
   TEAM_PAIR_INVALID: '같은 팀 조건이 올바르지 않아요. 참가자 중 서로 다른 두 사람만, 최대 5쌍까지 묶을 수 있어요.',
   TEAM_NO_VALID_SPLIT:

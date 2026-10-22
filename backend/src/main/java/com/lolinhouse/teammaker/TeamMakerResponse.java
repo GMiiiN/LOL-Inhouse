@@ -17,11 +17,11 @@ public record TeamMakerResponse(List<Option> options, Map<Long, Map<Position, Ma
             int cost, int total) {
     }
 
-    /** 한 자리. tier·sub가 null이면 티어 없는 라인(점수는 대체 점수). */
-    public record SlotView(long playerId, Position position, Integer tier, TierSub sub, int score) {
+    /** 한 자리. tier·sub가 null이면 티어 없는 라인(점수는 대체 점수). estimated면 담당자가 입력한 티어 차이로 정한 추정 티어. */
+    public record SlotView(long playerId, Position position, Integer tier, TierSub sub, int score, boolean estimated) {
     }
 
     /** 점수표 한 칸. 프런트는 교체 후 이 값을 찾아 쓴다. */
-    public record MatrixCell(int score, Integer tier, TierSub sub, boolean hasTier) {
+    public record MatrixCell(int score, Integer tier, TierSub sub, boolean hasTier, boolean estimated) {
     }
 }

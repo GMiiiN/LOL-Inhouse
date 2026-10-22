@@ -31,8 +31,10 @@ public final class TierTeamErrorCodes {
     public static final String TEAM_DUPLICATE_PARTICIPANT = "TEAM_DUPLICATE_PARTICIPANT";
     /** 400 수동 모드에서 어떤 라인이 2명이 아님(position 포함) */
     public static final String TEAM_LANE_PICK_INCOMPLETE = "TEAM_LANE_PICK_INCOMPLETE";
-    /** 400 수동 모드에서 그 라인 티어가 없는 사람 */
-    public static final String TEAM_LANE_TIER_MISSING = "TEAM_LANE_TIER_MISSING";
+    /** 400 수동 모드에서 그 라인에 티어 없는 사람이 있는데 tierGaps가 없음(position 포함) */
+    public static final String TEAM_TIER_GAP_REQUIRED = "TEAM_TIER_GAP_REQUIRED";
+    /** 400 tierGaps 값이 규칙(stronger 0·1·null, tiers 0~5)에 맞지 않음(position 포함) */
+    public static final String TEAM_TIER_GAP_INVALID = "TEAM_TIER_GAP_INVALID";
     /** 400 없는 선수 id */
     public static final String TEAM_PLAYER_NOT_FOUND = "TEAM_PLAYER_NOT_FOUND";
     /** 400 쌍에 참가자가 아닌 사람, 자기 자신과의 쌍, 또는 쌍이 5개 초과 */

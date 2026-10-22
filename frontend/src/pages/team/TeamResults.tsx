@@ -26,11 +26,12 @@ type Props = {
   coinDelayMs?: number
 }
 
-// 칸의 티어 표기. 티어 없는 라인은 경고색, 고정한 라인이면 "· 고정"(수동 교체로 다른 라인에 간 사람은 표시 안 함)
+// 칸의 티어 표기. 티어 없는 라인은 경고색, 추정 티어는 "(추정)", 고정한 라인이면 "· 고정"(수동 교체로 다른 라인에 간 사람은 표시 안 함)
 function SlotTier({ slot, fixedLanes }: { slot: SlotView; fixedLanes: Record<number, Position> }) {
   return (
     <>
       {slot.tier === null ? <span className="tm-nolane">티어 없음</span> : `${slot.tier}티어`}
+      {slot.estimated && ' (추정)'}
       {fixedLanes[slot.playerId] === slot.position && (
         <>
           {' · '}

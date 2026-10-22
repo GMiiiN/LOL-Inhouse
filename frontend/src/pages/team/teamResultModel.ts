@@ -26,7 +26,14 @@ export function recalc(blue: SlotView[], red: SlotView[]): TeamOption {
 function slotFor(matrix: ScoreMatrix, playerId: number, lane: number): SlotView {
   const position = POSITIONS[lane]
   const cell: MatrixCell | undefined = matrix[String(playerId)]?.[position]
-  return { playerId, position, tier: cell?.tier ?? null, sub: cell?.sub ?? null, score: cell?.score ?? 0 }
+  return {
+    playerId,
+    position,
+    tier: cell?.tier ?? null,
+    sub: cell?.sub ?? null,
+    score: cell?.score ?? 0,
+    ...(cell?.estimated && { estimated: true }),
+  }
 }
 
 // 두 칸의 사람을 서로 자리 바꿈(같은 칸이면 그대로). 각자 새 자리 라인으로 점수를 다시 구한다.
