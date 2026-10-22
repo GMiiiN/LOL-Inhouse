@@ -7,30 +7,23 @@ import { SESSIONS_KEY, sessionKey } from '../../api/queryKeys'
 import type { FearlessMode } from '../../api/registrationTypes'
 import type { AdminSetSummary } from '../../api/types'
 import { ErrorNotice } from '../../components/ErrorNotice'
-import { formatDuration } from '../stats/format'
+import { formatDuration, formatSeoulDateTime } from '../stats/format'
+import { useDeleteSet, useRestoreSet } from './history/useSetDeleteRestore'
 
 const MODE_LABEL: Record<FearlessMode, string> = { RESET: '피어리스 초기화', CONTINUE: '피어리스 이어가기' }
 
-// 등록 시각을 한국 시간 "MM-DD HH:mm"으로. 읽을 수 없으면 원문 그대로
-function formatCreatedAt(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Seoul',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date)
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
-  return `${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
-}
-
 // 대결 안에 넣은 세트를 한 표로: "어디에 뭘 넣었는지" 한눈에 확인한다.
-function DuelSetTable({ sets }: { sets: AdminSetSummary[] }) {
+function DuelSetTable({ sets, duelId, duelSeq }: { sets: AdminSetSummary[]; duelId: number; duelSeq: number }) {
+  const remove = useDeleteSet()
+  const restore = useRestoreSet()
+  const busy = remove.isPending || restore.isPending
+  const onDelete = (set: AdminSetSummary) => {
+    if (!window.confirm(`대결 ${duelSeq} · ${set.setNo}세트를 삭제할까요? 기록 관리에서 복구할 수 있어요.`)) return
+    remove.mutate({ setId: set.setId, duelId })
+  }
   if (sets.length === 0) return <p className="muted-text">아직 넣은 세트가 없습니다.</p>
   return (
+    <>
     <table className="data-table data-table-large set-table" aria-label="넣은 세트">
       <thead>
         <tr>
@@ -57,17 +50,47 @@ function DuelSetTable({ sets }: { sets: AdminSetSummary[] }) {
               {set.team1Kills} : {set.team2Kills}
             </td>
             <td>{set.source === 'IMPORT' ? '가져오기' : '결과창'}</td>
-            <td>{formatCreatedAt(set.createdAt)}</td>
+            <td>{formatSeoulDateTime(set.createdAt)}</td>
             <td>
               {set.deleted && <span className="badge badge-warn">삭제됨</span>}{' '}
               <Link to={`/sets/${set.setId}`} aria-label={`세트 ${set.setNo} 상세`}>
                 상세
-              </Link>
+              </Link>{' '}
+              {set.deleted ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label={`세트 ${set.setNo} 복구`}
+                  onClick={() => restore.mutate({ setId: set.setId, duelId })}
+                >
+                  복구
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label={`세트 ${set.setNo} 삭제`}
+                  onClick={() => onDelete(set)}
+                >
+                  삭제
+                </button>
+              )}
             </td>
           </tr>
         ))}
       </tbody>
     </table>
+    <ErrorNotice error={remove.error ?? restore.error} />
+    {restore.data && restore.data.warnings.length > 0 && (
+      <div className="warn-notice" role="status">
+        <ul>
+          {restore.data.warnings.map((w) => (
+            <li key={w}>{w}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+    </>
   )
 }
 
@@ -146,7 +169,7 @@ export function SessionDetailPage() {
                     세트 등록
                   </Link>
                 </div>
-                {duel.sets && <DuelSetTable sets={duel.sets} />}
+                {duel.sets && <DuelSetTable sets={duel.sets} duelId={duel.id} duelSeq={duel.seq} />}
               </li>
             ))}
           </ul>

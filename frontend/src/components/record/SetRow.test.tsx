@@ -54,6 +54,13 @@ describe('SetRow', () => {
     expect(screen.getByLabelText('팀 킬 블루 대 레드')).toHaveTextContent('17 : 23')
   })
 
+  it('접힌 줄에서도 기본으로 참여 선수 이름이 챔피언 아래 보인다', () => {
+    const set = makeSet()
+    renderWith(<SetRow set={set} />)
+    const names = set.teams.flatMap((t) => t.players.map((p) => p.displayName))
+    expect([...document.querySelectorAll('.set-row-pick-name')].map((e) => e.textContent)).toHaveLength(names.length)
+  })
+
   it('밴을 B1 R1 B2 R2 ... B5 R5 라벨로 보여 준다', () => {
     renderWith(<SetRow set={makeSet()} defaultExpanded />)
     const labels = Array.from(document.querySelectorAll('.ban-label')).map((el) => el.textContent)

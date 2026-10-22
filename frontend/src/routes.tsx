@@ -6,6 +6,7 @@ import { LoginPage } from './pages/admin/LoginPage'
 import { ChampionStatsPage } from './pages/champions/ChampionStatsPage'
 import { DuelDetailPage } from './pages/duel/DuelDetailPage'
 import { HomePage } from './pages/home/HomePage'
+import { RecordManagePage } from './pages/admin/history/RecordManagePage'
 import { PlayerTierAdminPage } from './pages/admin/players/PlayerTierAdminPage'
 import { SessionDetailPage } from './pages/admin/SessionDetailPage'
 import { SessionsPage } from './pages/admin/SessionsPage'
@@ -18,7 +19,6 @@ import { RecordsPage } from './pages/records/RecordsPage'
 import { SetDetailPage } from './pages/set/SetDetailPage'
 import { TeamMakerPage } from './pages/team/TeamMakerPage'
 import { TierListPage } from './pages/tier/TierListPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
 
 export const routes: RouteObject[] = [
   {
@@ -45,7 +45,7 @@ export const routes: RouteObject[] = [
       { path: '/admin/duels/:duelId/sets/new', element: <SetRegisterPage /> },
       { path: '/admin/players', element: <PlayerTierAdminPage /> },
       { path: '/admin/score', element: <ScoreSettingsPage /> },
-      { path: '/admin/history', element: <PlaceholderPage title="기록 관리" milestone="M6" /> },
+      { path: '/admin/history', element: <RecordManagePage /> },
     ],
   },
 ]

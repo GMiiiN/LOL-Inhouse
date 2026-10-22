@@ -48,7 +48,8 @@ describe('PlayerTierAdminPage', () => {
     mockFetch(baseRoutes)
     renderApp('/admin/players')
 
-    expect(await screen.findByRole('button', { name: /홍길동 수정/ })).toBeInTheDocument()
+    // 첫 렌더는 티어리스트·프로필·추천 세 요청을 기다려 전체 병렬 실행에서 느릴 수 있다
+    expect(await screen.findByRole('button', { name: /홍길동 수정/ }, { timeout: 5000 })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '편집 모드' })).not.toBeInTheDocument()
   })
 

@@ -12,6 +12,7 @@ import { sidesOf } from '../../components/record/recordView'
 import { TeamLabel } from '../../components/stats/TeamLabel'
 import { formatDuration, formatGold } from '../stats/format'
 import { OriginalImageButton } from './OriginalImageButton'
+import { SetAdminActions } from './SetAdminActions'
 import '../../styles/records.css'
 
 function TeamTotals({ team }: { team: TeamView }) {
@@ -39,6 +40,13 @@ export function SetDetailPage() {
       <div className="page-title-row">
         <h1>세트 상세</h1>
         <OriginalImageButton setId={data.setId} />
+        <SetAdminActions
+          setId={data.setId}
+          sessionId={data.sessionId}
+          duelId={data.duelId}
+          duelSeq={data.duelSeq}
+          setNo={data.setNo}
+        />
       </div>
       <p className="set-detail-meta">
         {data.sessionDate} · <Link to={`/duels/${data.duelId}`}>대결 {data.duelSeq}</Link> · {data.setNo}세트

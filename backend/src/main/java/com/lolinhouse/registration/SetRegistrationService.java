@@ -4,12 +4,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.lolinhouse.champion.CatalogSnapshot;
 import com.lolinhouse.champion.ChampionCatalog;
 import com.lolinhouse.common.web.ApiException;
+import com.lolinhouse.common.web.UniqueViolations;
 import com.lolinhouse.domain.DuelTeam;
 import com.lolinhouse.domain.set.BanOrder;
 import com.lolinhouse.domain.set.BanOrder.BanTurn;
@@ -42,8 +41,6 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @Service
 public class SetRegistrationService {
-
-    private static final Pattern CONSTRAINT_NAME = Pattern.compile("for key '([^']+)'");
 
     private final DuelRepository duelRepository;
     private final InhouseSessionRepository sessionRepository;
@@ -263,7 +260,7 @@ public class SetRegistrationService {
             // 확인한 선수가 저장 직전에 삭제된 경우(MySQL 1452). 데이터는 FK가 지켰고 사용자는 선수 선택을 다시 확인하면 된다
             return ApiException.conflict("CONCURRENT_REQUEST_CONFLICT", "선택한 선수가 삭제되었습니다. 선수를 다시 확인하세요.");
         }
-        String constraint = constraintName(e);
+        String constraint = UniqueViolations.constraintName(e);
         if (constraint == null) {
             return e;
         }
@@ -292,23 +289,6 @@ public class SetRegistrationService {
             }
         }
         return false;
-    }
-
-    // MySQL 1062 메시지의 "for key '...'"에서 제약 이름만 꺼낸다. 메시지에는 닉네임 키가 섞일 수 있어 로그에 남기지 않는다
-    private static String constraintName(Throwable error) {
-        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
-            String message = cause.getMessage();
-            if (message != null) {
-                Matcher matcher = CONSTRAINT_NAME.matcher(message);
-                if (matcher.find()) {
-                    return matcher.group(1);
-                }
-            }
-            if (cause.getCause() == cause) {
-                break;
-            }
-        }
-        return null;
     }
 
     private static ApiException duplicateSet(DuplicateSet existing) {

@@ -58,6 +58,18 @@ describe('routes', () => {
     expect(await screen.findByLabelText('1티어')).toHaveValue(60)
   })
 
+  it('로그인한 상태에서 /admin/history는 기록 관리(삭제된 세트)를 그리고 메뉴에 기록 관리가 있다', async () => {
+    mockFetch({
+      'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),
+      'GET /api/admin/deleted-sets': () => jsonResponse(200, []),
+    })
+    renderApp('/admin/history')
+
+    expect(await screen.findByRole('heading', { level: 1, name: '기록 관리' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '담당자 메뉴' })).toHaveTextContent('기록 관리')
+    expect(await screen.findByText('삭제된 세트가 없어요')).toBeInTheDocument()
+  })
+
   it('로그인한 상태에서 /admin/players는 담당자 헤더와 새 선수 관리(티어리스트 + 사람 추가)를 그린다', async () => {
     mockFetch({
       'GET /api/admin/me': () => jsonResponse(200, { username: 'admin' }),

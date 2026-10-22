@@ -28,3 +28,4 @@ export const duosKey = (period: Period) => ['public', 'duos', period] as const
 export const HOME_KEY = ['public', 'home'] as const
 export const PUBLIC_CHAMPIONS_KEY = ['public', 'champions'] as const
 export const TIER_RECOMMENDATIONS_KEY = ['admin', 'tier-recommendations'] as const
+export const DELETED_SETS_KEY = ['admin', 'deleted-sets'] as const
